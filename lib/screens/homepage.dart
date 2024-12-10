@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'dart:ui';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:nlrc_rfid_scanner/assets/themeData.dart';
 import 'package:nlrc_rfid_scanner/modals/scanned_modal.dart';
+import 'package:nlrc_rfid_scanner/screens/admin_page.dart';
 import 'package:nlrc_rfid_scanner/widget/clock.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -20,6 +23,7 @@ class _MyHomePageState extends State<MyHomePage> {
   final FocusNode _focusNode = FocusNode();
   bool _isRFIDScanning = false;
   DateTime _lastKeypressTime = DateTime.now();
+  Timer? _expirationTimer;
   bool _isModalOpen = false;
   bool _isReceiveMode = true; // New variable for "Receive" vs "Away" mode
   List<String> _awayModeNotifications =
@@ -42,32 +46,39 @@ class _MyHomePageState extends State<MyHomePage> {
       // Skip handling modifier keys (like Alt, Ctrl, Shift)
       if (event.logicalKey.keyLabel.isEmpty) return;
 
-      // Process only new key presses
       final String data = event.logicalKey.debugName ?? '';
       final DateTime currentTime = DateTime.now();
       final Duration timeDifference = currentTime.difference(_lastKeypressTime);
 
+      // Handle key events only if valid RFID input
       if (data.isNotEmpty && _isRFIDInput(data, timeDifference)) {
         setState(() {
           _rfidData += data; // Accumulate scanned data
         });
 
+        // Start a 20ms timer to enforce expiration
+        _startExpirationTimer();
+        print(event.character);
         if (event.logicalKey == LogicalKeyboardKey.enter) {
-          // RFID scan is complete when Enter key is pressed
-          String filteredData = _filterRFIDData(_rfidData);
+          // Ensure RFID data is not empty and greater than 7 characters before processing
+          if (_rfidData.isNotEmpty && _rfidData.length >= 9) {
+            String filteredData = _filterRFIDData(_rfidData);
 
-          if (_isReceiveMode) {
-            // Add to notification list and show modal immediately in receive mode
-            _addToAwayModeNotifications(filteredData);
-            _showRFIDModal(filteredData, currentTime);
+            if (_isReceiveMode) {
+              // Add to notification list and show modal immediately in receive mode
+              _addToAwayModeNotifications(filteredData);
+              _showRFIDModal(filteredData, currentTime);
+            } else {
+              // Only add to the notification list in away mode
+              _addToAwayModeNotifications(filteredData);
+            }
+
+            setState(() {
+              _rfidData = '';
+            });
           } else {
-            // Only add to the notification list in away mode
-            _addToAwayModeNotifications(filteredData);
+            debugPrint('RFID data is empty on Enter key event.');
           }
-
-          setState(() {
-            _rfidData = '';
-          });
         }
       }
 
@@ -77,12 +88,28 @@ class _MyHomePageState extends State<MyHomePage> {
 
   bool _isRFIDInput(String data, Duration timeDifference) {
     // Check if the input is part of an RFID scan
-    return timeDifference.inMilliseconds < 10 && data.length > 3;
+    return timeDifference.inMilliseconds < 30 && data.length >= 5;
   }
 
-  // Filter non-numeric characters from RFID data
+// Filter non-numeric characters from RFID data
   String _filterRFIDData(String data) {
     return data.replaceAll(RegExp(r'[^0-9]'), '');
+  }
+
+// Start a timer that clears RFID data if Enter key is not pressed within 20ms
+  void _startExpirationTimer() {
+    if (_expirationTimer != null) {
+      _expirationTimer!.cancel(); // Cancel any existing timer
+    }
+
+    _expirationTimer = Timer(const Duration(milliseconds: 30), () {
+      if (_rfidData.isNotEmpty) {
+        debugPrint('Expiration timer triggered: Clearing RFID data.');
+        setState(() {
+          _rfidData = '';
+        });
+      }
+    });
   }
 
   // Display the modal for "Receive" mode
@@ -130,7 +157,7 @@ class _MyHomePageState extends State<MyHomePage> {
     if (_awayModeNotifications.isEmpty) return SizedBox.shrink();
 
     return Positioned(
-      top: 50,
+      top: 10,
       right: 10,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
@@ -184,18 +211,148 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      /* drawer: Drawer(
-        child: DrawerButton(),
+      drawer: Drawer(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            /* DrawerHeader(
+              decoration: BoxDecoration(
+                color: Colors.blueAccent,
+              ),
+              child: Stack(
+                /* crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end, */
+                children: [
+                  Text(
+                    'Menu',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ), */
+
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Container(
+                height: MediaQuery.sizeOf(context).height / 1.5,
+                width: double.maxFinite,
+                decoration: BoxDecoration(
+                  color: Colors.black12,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      height: 10,
+                    ),
+                    Text(
+                      "Logged in Today",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: primaryBlack,
+                      ),
+                    )
+                  ],
+                ),
+              ),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.symmetric(
+                vertical: 10,
+                horizontal: 20,
+              ),
+              leading: Icon(Icons.admin_panel_settings),
+              title: Text(
+                'Admin Login',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              onTap: () {
+                // Navigate to admin login page
+                Navigator.pop(context); // Close the drawer
+                _navigateToAdminLogin(context);
+              },
+            ),
+          ],
+        ),
       ),
       appBar: AppBar(
-        title: Text("RFID Scanner"),
+        foregroundColor: primaryWhite,
+        backgroundColor: Color.fromARGB(255, 60, 45, 194),
+        title: Container(
+          child: Row(
+            children: [
+              /* Image.asset(
+                'lib/assets/images/NLRC.png',
+                fit: BoxFit.cover,
+                height: 50,
+                width: 50,
+              ),
+              SizedBox(
+                width: 10,
+              ), */
+              Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "National Labor Relations Commission",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                  /* Text(
+                    "Relations Commission",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ) */
+                ],
+              ),
+            ],
+          ),
+        ),
         actions: [
-          
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Row(
+              children: [
+                Text(
+                  "Modes: ",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Row(
+                  children: [
+                    Switch(
+                      value: _isReceiveMode,
+                      onChanged: _toggleMode,
+                      activeTrackColor: Colors.green,
+                      activeColor: Colors.white,
+                    ),
+                  ],
+                ),
+                SizedBox(
+                  width: 70,
+                  child: Text(
+                    _isReceiveMode ? "Receive" : "Away",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
-      ), */
+      ),
       body: Stack(
         children: [
-          /* Center(
+          Center(
             child: Container(
               height: MediaQuery.sizeOf(context).height,
               width: MediaQuery.sizeOf(context).width,
@@ -207,7 +364,6 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
             ),
           ),
-
           BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
             child: Container(
@@ -215,7 +371,7 @@ class _MyHomePageState extends State<MyHomePage> {
               height: MediaQuery.sizeOf(context).height,
               width: MediaQuery.sizeOf(context).width,
             ),
-          ), */
+          ),
           Center(
             child: Container(
               decoration: BoxDecoration(
@@ -238,7 +394,6 @@ class _MyHomePageState extends State<MyHomePage> {
           Center(
             child: clockWidget(),
           ),
-          // Build notifications in Away mode
           _buildAwayModeNotifications(),
           KeyboardListener(
             focusNode: _focusNode,
@@ -246,33 +401,7 @@ class _MyHomePageState extends State<MyHomePage> {
             child: Container(),
           ),
 
-          Positioned(
-            top: 10,
-            right: 10,
-            child: Row(
-              children: [
-                Text(
-                  "Modes: ",
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                Row(
-                  children: [
-                    Switch(
-                      value: _isReceiveMode,
-                      onChanged: _toggleMode,
-                      activeTrackColor: Colors.green,
-                      activeColor: Colors.white,
-                    ),
-                  ],
-                ),
-                Text(
-                  _isReceiveMode ? "Receive" : "Away",
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-          ),
-          Positioned(
+          /* Positioned(
             top: 20,
             left: 20,
             child: Container(
@@ -306,12 +435,23 @@ class _MyHomePageState extends State<MyHomePage> {
                         ),
                       )
                     ],
-                  )
+                  ),
                 ],
               ),
             ),
-          ),
+          ), */
         ],
+      ),
+    );
+  }
+
+// Navigate to the admin login page
+  void _navigateToAdminLogin(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            AdminPage(), // Replace with your actual admin login page
       ),
     );
   }

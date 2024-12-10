@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:flutter/material.dart';
-
 class ScannedModal extends StatefulWidget {
   final String rfidData;
 

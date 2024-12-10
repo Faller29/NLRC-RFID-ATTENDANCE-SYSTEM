@@ -123,4 +123,52 @@ class _RFIDListenerPageState extends State<RFIDListenerPage> {
     );
   }
 }
+
+
+
+
+
+
+
+
+void _onKey(KeyEvent event) {
+    if (event is KeyDownEvent) {
+      final String data = event.logicalKey.debugName ?? '';
+      final DateTime currentTime = DateTime.now();
+      final Duration timeDifference = currentTime.difference(_lastKeypressTime);
+
+      if (data.isNotEmpty && _isRFIDInput(data, timeDifference)) {
+        setState(() {
+          _rfidData += data; // Accumulate scanned data
+        });
+
+        if (event.logicalKey == LogicalKeyboardKey.enter) {
+          // RFID scan is complete when Enter key is pressed
+          String filteredData = _filterRFIDData(_rfidData);
+
+          if (_isReceiveMode) {
+            // Add to notification list and show modal immediately in receive mode
+            _addToAwayModeNotifications(filteredData);
+            _showRFIDModal(filteredData, currentTime);
+          } else {
+            // Only add to the notification list in away mode
+            _addToAwayModeNotifications(filteredData);
+          }
+
+          setState(() {
+            _rfidData = '';
+          });
+        }
+      }
+
+      _lastKeypressTime = currentTime;
+    }
+  }
+
+
+
+
+
+
+
  */
