@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "42666403791",
+    "project_id": "nlrc-rfid",
+    "storage_bucket": "nlrc-rfid.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:42666403791:android:52f8b0e2c4c1b2bda014ba",
+        "android_client_info": {
+          "package_name": "com.example.nlrc_rfid_scanner"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBZPsXpPoKm07TUa1X_rp0ppww0p6Fjkcs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

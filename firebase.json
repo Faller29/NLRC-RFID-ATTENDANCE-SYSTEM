@@ -1,0 +1,27 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "nlrc-rfid",
+          "appId": "1:42666403791:android:52f8b0e2c4c1b2bda014ba",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "nlrc-rfid",
+          "configurations": {
+            "android": "1:42666403791:android:52f8b0e2c4c1b2bda014ba",
+            "web": "1:42666403791:web:1a10478c31459480a014ba",
+            "windows": "1:42666403791:web:95564734d45fdaa1a014ba"
+          }
+        }
+      }
+    }
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  }
+}
