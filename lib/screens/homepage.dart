@@ -29,7 +29,7 @@ class _MyHomePageState extends State<MyHomePage> {
   DateTime _lastKeypressTime = DateTime.now();
   Timer? _expirationTimer;
   bool _isModalOpen = false;
-  bool _isReceiveMode = true; // New variable for "Receive" vs "Away" mode
+  bool _isReceiveMode = true; //variable for "Receive" vs "Away" mode
   List<String> _awayModeNotifications =
       []; // List to store RFID data in Away mode
 
@@ -39,9 +39,12 @@ class _MyHomePageState extends State<MyHomePage> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
-    }); /* fetchUsers().then((_) {
+    });
+
+    //first approach but later moved to main for much earlier fetch
+
+    /* fetchUsers().then((_) {
       setState(() {
-        // Notify the UI that users have been fetched
       });
     }); */
   }
@@ -52,6 +55,7 @@ class _MyHomePageState extends State<MyHomePage> {
     super.dispose();
   }
 
+  //first approach but later moved to main for much earlier fetch
   /* Future<void> fetchUsers() async {
     // Simulating fetching users from Firebase Firestore
     final snapshot = await FirebaseFirestore.instance.collection('users').get();
@@ -63,6 +67,7 @@ class _MyHomePageState extends State<MyHomePage> {
       };
     }).toList();
   } */
+
   void _onKey(KeyEvent event) async {
     if (event is KeyDownEvent) {
       // Skip handling modifier keys (like Alt, Ctrl, Shift) or empty key labels
@@ -75,22 +80,21 @@ class _MyHomePageState extends State<MyHomePage> {
       final DateTime currentTime = DateTime.now();
       final Duration timeDifference = currentTime.difference(_lastKeypressTime);
 
-      // Handle key events only if valid RFID input
+      // Handle key events only if valid RFID input but removed as it is causing bugs. find end curly at the end of before the funct
       //if (_isRFIDInput(data, timeDifference)) {
       setState(() {
         _rfidData += data; // Accumulate only valid key inputs
-        //debugPrint('Accumulated RFID Data: $_rfidData');
       });
 
-      // Start a 20ms timer to enforce expiration
+      // Start a 30ms timer to enforce expiration
       _startExpirationTimer();
 
       // Check if Enter key is pressed
       if (event.logicalKey == LogicalKeyboardKey.enter) {
-        // Ensure RFID data is not empty and greater than 7 characters before processing
+        // Ensure RFID data is not empty and greater than 9 characters before processing
         if (_rfidData.isNotEmpty && _rfidData.length >= 9) {
           String filteredData = _filterRFIDData(_rfidData);
-          filteredData = '$filteredData'; // Add prefix '0' to the filtered data
+          filteredData = '$filteredData';
 
           // Check if the scanned RFID exists in the users list
           bool isRFIDExists = _checkRFIDExists(filteredData);
@@ -109,7 +113,12 @@ class _MyHomePageState extends State<MyHomePage> {
             debugPrint('RFID not found in users list.');
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('User not found or registered'),
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.symmetric(horizontal: 200, vertical: 10),
+                content: Text(
+                  'User not found or registered. Check if RFID is registered and Try again',
+                  textAlign: TextAlign.center,
+                ),
                 backgroundColor: Colors.redAccent,
               ),
             );

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:nlrc_rfid_scanner/assets/themeData.dart';
 import 'package:nlrc_rfid_scanner/backend/data/fetch.dart';
 //import 'package:nlrc_rfid_scanner/backend/data/users.dart';
 
@@ -216,7 +217,7 @@ class _ManageUserPageState extends State<ManageUserPage> {
 
     if (rfid.isEmpty || name.isEmpty || position.isEmpty || office.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please fill in all fields.')),
+        snackBarFailed('Please fill in all fields.', context),
       );
       return;
     }
@@ -232,7 +233,7 @@ class _ManageUserPageState extends State<ManageUserPage> {
         }).then((_) {
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('User updated successfully!')),
+            snackBarSuccess('User updated successfully!', context),
           );
           setState(() {
             // Refresh the list after updating the user
@@ -240,7 +241,7 @@ class _ManageUserPageState extends State<ManageUserPage> {
           });
         }).catchError((error) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to update user: $error')),
+            snackBarFailed(error, context),
           );
         });
       } else {
@@ -253,7 +254,7 @@ class _ManageUserPageState extends State<ManageUserPage> {
         }).then((_) {
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('User added successfully!')),
+            snackBarSuccess('User added successfully!', context),
           );
           setState(() {
             // Refresh the list after adding a new user
@@ -261,13 +262,13 @@ class _ManageUserPageState extends State<ManageUserPage> {
           });
         }).catchError((error) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to add user: $error')),
+            snackBarFailed(error, context),
           );
         });
       }
     }).catchError((error) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to check RFID: $error')),
+        snackBarFailed(error, context),
       );
     });
 
@@ -283,7 +284,7 @@ class _ManageUserPageState extends State<ManageUserPage> {
 
     if (rfid.isEmpty || name.isEmpty || position.isEmpty || office.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please fill in all fields.')),
+        snackBarFailed('Please fill in all fields.', context),
       );
       return;
     }
@@ -296,7 +297,7 @@ class _ManageUserPageState extends State<ManageUserPage> {
     }).then((_) {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('User updated successfully!')),
+        snackBarSuccess('User updated successfully!', context),
       );
       setState(() {
         // Refresh the list after updating a user
@@ -304,7 +305,7 @@ class _ManageUserPageState extends State<ManageUserPage> {
       });
     }).catchError((error) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update user: $error')),
+        snackBarFailed('$error', context),
       );
     });
   }
@@ -313,7 +314,7 @@ class _ManageUserPageState extends State<ManageUserPage> {
   void _deleteUser(String rfid) {
     _firestore.collection('users').doc(rfid).delete().then((_) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('User deleted successfully!')),
+        snackBarFailed('User deleted successfully!', context),
       );
       setState(() {
         // Refresh the list after deleting a user
@@ -321,7 +322,7 @@ class _ManageUserPageState extends State<ManageUserPage> {
       });
     }).catchError((error) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to delete user: $error')),
+        snackBarFailed(error, context),
       );
     });
   }
