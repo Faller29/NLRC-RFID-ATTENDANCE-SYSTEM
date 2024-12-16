@@ -4,11 +4,15 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:intl/intl.dart';
 import 'package:nlrc_rfid_scanner/assets/themeData.dart';
+import 'package:nlrc_rfid_scanner/assets/data/users.dart';
+import 'package:nlrc_rfid_scanner/main.dart';
 import 'package:nlrc_rfid_scanner/modals/scanned_modal.dart';
 import 'package:nlrc_rfid_scanner/screens/admin_page.dart';
 import 'package:nlrc_rfid_scanner/widget/clock.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:nlrc_rfid_scanner/widget/drawer.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({Key? key}) : super(key: key);
@@ -32,7 +36,14 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    _focusNode.requestFocus();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _focusNode.requestFocus();
+    }); /* fetchUsers().then((_) {
+      setState(() {
+        // Notify the UI that users have been fetched
+      });
+    }); */
   }
 
   @override
@@ -41,29 +52,50 @@ class _MyHomePageState extends State<MyHomePage> {
     super.dispose();
   }
 
-  void _onKey(KeyEvent event) {
+  /* Future<void> fetchUsers() async {
+    // Simulating fetching users from Firebase Firestore
+    final snapshot = await FirebaseFirestore.instance.collection('users').get();
+    localUsers = snapshot.docs.map((doc) {
+      return {
+        'rfid': doc['rfid'],
+        'name': doc['name'],
+        'position': doc['position'],
+      };
+    }).toList();
+  } */
+  void _onKey(KeyEvent event) async {
     if (event is KeyDownEvent) {
-      // Skip handling modifier keys (like Alt, Ctrl, Shift)
+      // Skip handling modifier keys (like Alt, Ctrl, Shift) or empty key labels
       if (event.logicalKey.keyLabel.isEmpty) return;
 
-      final String data = event.logicalKey.debugName ?? '';
+      final String data =
+          event.logicalKey.keyLabel; // Use keyLabel instead of debugName
+      print(data);
+
       final DateTime currentTime = DateTime.now();
       final Duration timeDifference = currentTime.difference(_lastKeypressTime);
 
       // Handle key events only if valid RFID input
-      if (data.isNotEmpty && _isRFIDInput(data, timeDifference)) {
-        setState(() {
-          _rfidData += data; // Accumulate scanned data
-        });
+      //if (_isRFIDInput(data, timeDifference)) {
+      setState(() {
+        _rfidData += data; // Accumulate only valid key inputs
+        //debugPrint('Accumulated RFID Data: $_rfidData');
+      });
 
-        // Start a 20ms timer to enforce expiration
-        _startExpirationTimer();
-        print(event.character);
-        if (event.logicalKey == LogicalKeyboardKey.enter) {
-          // Ensure RFID data is not empty and greater than 7 characters before processing
-          if (_rfidData.isNotEmpty && _rfidData.length >= 9) {
-            String filteredData = _filterRFIDData(_rfidData);
+      // Start a 20ms timer to enforce expiration
+      _startExpirationTimer();
 
+      // Check if Enter key is pressed
+      if (event.logicalKey == LogicalKeyboardKey.enter) {
+        // Ensure RFID data is not empty and greater than 7 characters before processing
+        if (_rfidData.isNotEmpty && _rfidData.length >= 9) {
+          String filteredData = _filterRFIDData(_rfidData);
+          filteredData = '$filteredData'; // Add prefix '0' to the filtered data
+
+          // Check if the scanned RFID exists in the users list
+          bool isRFIDExists = _checkRFIDExists(filteredData);
+
+          if (isRFIDExists) {
             if (_isReceiveMode) {
               // Add to notification list and show modal immediately in receive mode
               _addToAwayModeNotifications(filteredData);
@@ -72,23 +104,53 @@ class _MyHomePageState extends State<MyHomePage> {
               // Only add to the notification list in away mode
               _addToAwayModeNotifications(filteredData);
             }
-
-            setState(() {
-              _rfidData = '';
-            });
           } else {
-            debugPrint('RFID data is empty on Enter key event.');
+            // Handle case where RFID does not exist
+            debugPrint('RFID not found in users list.');
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('User not found or registered'),
+                backgroundColor: Colors.redAccent,
+              ),
+            );
           }
+
+          setState(() {
+            _rfidData = ''; // Clear RFID data after processing
+          });
+        } else {
+          debugPrint('RFID data is empty or insufficient on Enter key event.');
         }
       }
+      //}
 
-      _lastKeypressTime = currentTime;
+      _lastKeypressTime = currentTime; // Update the last keypress time
     }
   }
 
+  bool _checkRFIDExists(String rfid) {
+    for (var user in localUsers) {
+      if (user['rfid'] == rfid) {
+        return true; // RFID exists in the local list
+      }
+    }
+    return false; // RFID does not exist
+  }
+
+// Check if RFID exists in the local users list
+  /* bool _checkRFIDExists(String rfid) {
+    // Look through the users list and check if any entry matches the RFID
+    for (var user in users) {
+      if (user['rfid'] == rfid) {
+        return true; // RFID exists in the list
+      }
+    }
+    return false; // RFID does not exist
+  } */
+
   bool _isRFIDInput(String data, Duration timeDifference) {
     // Check if the input is part of an RFID scan
-    return timeDifference.inMilliseconds < 30 && data.length >= 5;
+    return timeDifference.inMilliseconds < 30 && data.length >= 1;
   }
 
 // Filter non-numeric characters from RFID data
@@ -113,27 +175,41 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   // Display the modal for "Receive" mode
+  // Find the user by RFID and pass their details to the modal
   void _showRFIDModal(String rfidData, DateTime timestamp,
       {VoidCallback? onRemoveNotification}) {
-    setState(() {
-      _isModalOpen = true; // Track that modal is open
-    });
+    // Find the user data by RFID
+    var matchedUser = _findUserByRFID(rfidData);
 
-    showDialog(
-      context: context,
-      barrierDismissible: false, // Prevent closing the modal by tapping outside
-      builder: (BuildContext context) {
-        return ScannedModal(
-          rfidData: rfidData,
-          timestamp: timestamp,
-          onRemoveNotification: onRemoveNotification, // Pass callback
-        );
-      },
-    ).then((_) {
+    if (matchedUser != null) {
       setState(() {
-        _isModalOpen = false; // Modal is closed, allow key events again
+        _isModalOpen = true; // Track that modal is open
       });
-    });
+
+      showDialog(
+        context: context,
+        barrierDismissible:
+            false, // Prevent closing the modal by tapping outside
+        builder: (BuildContext context) {
+          return ScannedModal(
+            rfidData: rfidData,
+            timestamp: timestamp,
+            userData: matchedUser, // Pass the matched user data
+            onRemoveNotification: onRemoveNotification, // Pass callback
+          );
+        },
+      ).then((_) {
+        setState(() {
+          _isModalOpen = false; // Modal is closed, allow key events again
+        });
+      });
+    }
+  }
+
+// Find the user in the list by RFID
+  Map<String, dynamic>? _findUserByRFID(String rfid) {
+    // Loop through the users list and return the user with the matching RFID
+    return users.firstWhere((user) => user['rfid'] == rfid, orElse: () => {});
   }
 
   // Add RFID data to notifications list in "Away" mode
@@ -160,12 +236,11 @@ class _MyHomePageState extends State<MyHomePage> {
       top: 10,
       right: 10,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
         children: _awayModeNotifications.map((notification) {
           final parts = notification.split('|'); // Split RFID and timestamp
           final rfid = parts[0];
           final timestamp = DateTime.parse(parts[1]); // Parse the timestamp
-
+          final DateFormat timeReceived = DateFormat('hh:mm');
           return InkWell(
             onTap: () {
               final notificationIndex =
@@ -182,25 +257,52 @@ class _MyHomePageState extends State<MyHomePage> {
                 },
               );
             },
-            child: Container(
-              width: 110,
-              alignment: Alignment.center,
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.green,
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: [
-                  BoxShadow(
-                      color: Colors.black26,
-                      blurRadius: 6,
-                      offset: Offset(0, 2)),
-                ],
-              ),
-              child: Text(
-                rfid,
-                style: TextStyle(color: Colors.white),
-              ),
+            child: Stack(
+              children: [
+                Container(
+                  height: 50,
+                  width: 130,
+                  alignment: Alignment.center,
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 6,
+                          offset: Offset(0, 2)),
+                    ],
+                  ),
+                ),
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    child: Text(
+                      '${timeReceived.format(timestamp)}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 22,
+                  left: 25,
+                  child: Text(
+                    rfid,
+                    style: TextStyle(
+                      color: Colors.white,
+                    ),
+                  ),
+                )
+              ],
             ),
           );
         }).toList(),
@@ -211,76 +313,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: Drawer(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            /* DrawerHeader(
-              decoration: BoxDecoration(
-                color: Colors.blueAccent,
-              ),
-              child: Stack(
-                /* crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end, */
-                children: [
-                  Text(
-                    'Menu',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ), */
-
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Container(
-                height: MediaQuery.sizeOf(context).height / 1.5,
-                width: double.maxFinite,
-                decoration: BoxDecoration(
-                  color: Colors.black12,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                      height: 10,
-                    ),
-                    Text(
-                      "Logged in Today",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                        color: primaryBlack,
-                      ),
-                    )
-                  ],
-                ),
-              ),
-            ),
-            ListTile(
-              contentPadding: EdgeInsets.symmetric(
-                vertical: 10,
-                horizontal: 20,
-              ),
-              leading: Icon(Icons.admin_panel_settings),
-              title: Text(
-                'Admin Login',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              onTap: () {
-                // Navigate to admin login page
-                Navigator.pop(context); // Close the drawer
-                _navigateToAdminLogin(context);
-              },
-            ),
-          ],
-        ),
-      ),
+      drawer: CustomDrawer(),
       appBar: AppBar(
         foregroundColor: primaryWhite,
         backgroundColor: Color.fromARGB(255, 60, 45, 194),
@@ -367,32 +400,13 @@ class _MyHomePageState extends State<MyHomePage> {
           BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
             child: Container(
-              color: Colors.blue.withOpacity(0.1),
+              color: Color.fromARGB(255, 15, 11, 83).withOpacity(0.5),
               height: MediaQuery.sizeOf(context).height,
               width: MediaQuery.sizeOf(context).width,
             ),
           ),
           Center(
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                color: primaryBlack.withOpacity(0.8),
-              ),
-              padding: EdgeInsets.all(5),
-              height: MediaQuery.sizeOf(context).height / 2,
-              width: MediaQuery.sizeOf(context).width / 1.5,
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  color: primaryWhite,
-                ),
-                height: MediaQuery.sizeOf(context).height,
-                width: MediaQuery.sizeOf(context).width,
-              ),
-            ),
-          ),
-          Center(
-            child: clockWidget(),
+            child: ClockWidget(),
           ),
           _buildAwayModeNotifications(),
           KeyboardListener(
@@ -400,46 +414,6 @@ class _MyHomePageState extends State<MyHomePage> {
             onKeyEvent: _onKey,
             child: Container(),
           ),
-
-          /* Positioned(
-            top: 20,
-            left: 20,
-            child: Container(
-              child: Row(
-                children: [
-                  Image.asset(
-                    'lib/assets/images/NLRC.jpg',
-                    fit: BoxFit.cover,
-                    height: 100,
-                    width: 100,
-                  ),
-                  SizedBox(
-                    width: 10,
-                  ),
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "National Labor",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 28,
-                        ),
-                      ),
-                      Text(
-                        "Relations Commission",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 28,
-                        ),
-                      )
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ), */
         ],
       ),
     );
@@ -447,12 +421,19 @@ class _MyHomePageState extends State<MyHomePage> {
 
 // Navigate to the admin login page
   void _navigateToAdminLogin(BuildContext context) {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+          builder: (context) =>
+              AdminPage()), // Replace with your initial screen
+      (Route<dynamic> route) => false, // Removes all the previous routes
+    );
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) =>
             AdminPage(), // Replace with your actual admin login page
       ),
-    );
+    ).then((value) => setState(() {}));
   }
 }

@@ -4,14 +4,15 @@ import 'package:intl/intl.dart';
 
 class ScannedModal extends StatefulWidget {
   final String rfidData;
-  final DateTime timestamp; // Add timestamp field
-  final VoidCallback?
-      onRemoveNotification; // Callback for removing notifications
+  final DateTime timestamp;
+  final Map<String, dynamic> userData;
+  final VoidCallback? onRemoveNotification;
 
   const ScannedModal({
     Key? key,
     required this.rfidData,
     required this.timestamp,
+    required this.userData,
     this.onRemoveNotification,
   }) : super(key: key);
 
@@ -20,8 +21,10 @@ class ScannedModal extends StatefulWidget {
 }
 
 class _ScannedModalState extends State<ScannedModal> {
-  String? _selectedJobType; // To store the selected job type
-  final List<String> _jobTypes = ['Office', 'OB']; // Dropdown options
+  String? _selectedJobType;
+  final List<String> _jobTypes = ['Office', 'OB'];
+
+  final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
   @override
   Widget build(BuildContext context) {
@@ -48,8 +51,6 @@ class _ScannedModalState extends State<ScannedModal> {
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 10),
-
-                  // RFID Information
                   Row(
                     children: [
                       const Text(
@@ -66,25 +67,22 @@ class _ScannedModalState extends State<ScannedModal> {
                     ],
                   ),
                   const SizedBox(height: 16),
-
-                  const Row(
+                  Row(
                     children: [
-                      Text(
+                      const Text(
                         'Name:',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      SizedBox(width: 8),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'John Peter Faller',
+                          widget.userData['name'] ?? 'Unknown',
                           style: TextStyle(color: Colors.blueGrey),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
-
-                  // Display the time logged from the passed timestamp
                   Row(
                     children: [
                       const Text(
@@ -101,25 +99,38 @@ class _ScannedModalState extends State<ScannedModal> {
                     ],
                   ),
                   const SizedBox(height: 16),
-
-                  const Row(
+                  Row(
                     children: [
-                      Text(
+                      const Text(
                         'Position:',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      SizedBox(width: 8),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Master ni Renzy',
+                          widget.userData['position'] ?? 'Unknown',
                           style: TextStyle(color: Colors.blueGrey),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
-
-                  // Field Type Dropdown
+                  Row(
+                    children: [
+                      const Text(
+                        'Office:',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          widget.userData['office'] ?? 'Unknown',
+                          style: TextStyle(color: Colors.blueGrey),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
                   Row(
                     children: [
                       const Text(
@@ -156,8 +167,6 @@ class _ScannedModalState extends State<ScannedModal> {
                     ],
                   ),
                   const SizedBox(height: 16),
-
-                  // Action Buttons
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
@@ -175,7 +184,7 @@ class _ScannedModalState extends State<ScannedModal> {
                             widget
                                 .onRemoveNotification!(); // Remove notification
                           }
-                          _logAction();
+                          _saveAttendance(); // Save attendance to Firestore
                           Navigator.of(context).pop();
                         },
                         child: const Text(
@@ -194,27 +203,48 @@ class _ScannedModalState extends State<ScannedModal> {
     );
   }
 
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
-
-  void _logAction() async {
+  void _saveAttendance() async {
     try {
-      // Save the "logged" entry in Firestore
-      await firestore.collection('logs').add({
-        'action': 'logged', // Action description
-        'timestamp': FieldValue.serverTimestamp(), // Current timestamp
-      });
-      debugPrint('Action logged successfully!');
+      final userId = widget.rfidData; // Assuming RFID is unique to the user
+      final today = widget.timestamp; // Use the timestamp passed to the modal
+      final monthYear =
+          DateFormat('MMM_yyyy').format(today); // Get current month and year
+      final day = DateFormat('dd').format(today); // Get the day
+      final attendanceRef = firestore
+          .collection('attendances')
+          .doc(monthYear) // Collection for the current month/year
+          .collection(day) // Subcollection for the current day
+          .doc(userId); // Document for the specific user (RFID)
+
+      final attendanceDoc = await attendanceRef.get();
+
+      if (!attendanceDoc.exists) {
+        // First scan, save as Time In
+        await attendanceRef.set({
+          'name': widget.userData['name'],
+          'officeType': widget.userData['office'],
+          'timeIn': widget.timestamp, // Use the timestamp passed to the modal
+          'timeOut': null,
+        });
+        debugPrint('Time In saved for $monthYear $day');
+      } else {
+        // If Time In exists, update Time Out
+        await attendanceRef.update({
+          'timeOut': widget.timestamp, // Use the timestamp passed to the modal
+        });
+        debugPrint('Time Out saved for $monthYear $day');
+      }
     } catch (e) {
-      debugPrint('Failed to log action: $e');
+      debugPrint('Error saving attendance: $e');
     }
   }
 
-  // Helper function to get the current time in 12-hour format with AM/PM
   String _formatTimestamp(DateTime timestamp) {
     final DateFormat formatter = DateFormat('hh:mm a');
     return formatter.format(timestamp);
   }
 }
+
 
 
 

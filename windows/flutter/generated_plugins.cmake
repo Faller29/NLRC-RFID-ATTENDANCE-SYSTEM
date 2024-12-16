@@ -4,14 +4,10 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   cloud_firestore
-  desktop_lifecycle
-  desktop_multi_window
   firebase_core
-  flutter_libserialport
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
-  dartusbhid
 )
 
 set(PLUGIN_BUNDLED_LIBRARIES)

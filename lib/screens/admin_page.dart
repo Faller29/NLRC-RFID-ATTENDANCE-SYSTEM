@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:nlrc_rfid_scanner/backend/data/fetch.dart';
 import 'package:nlrc_rfid_scanner/screens/admin__pages/dashboard_page.dart';
 import 'package:nlrc_rfid_scanner/screens/admin__pages/manage_user_page.dart';
 import 'package:nlrc_rfid_scanner/screens/admin__pages/report_page.dart';
 import 'package:nlrc_rfid_scanner/screens/admin__pages/settings_page.dart';
+import 'package:nlrc_rfid_scanner/screens/homepage.dart';
 
 class AdminPage extends StatefulWidget {
   @override
@@ -28,6 +30,17 @@ class _AdminPageState extends State<AdminPage> {
     ManageUserPage(),
     SettingsPage(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    //fetchDataAndGenerateDartFile();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -99,7 +112,14 @@ class _AdminPageState extends State<AdminPage> {
                           horizontal: 20, vertical: 15),
                     ),
                     onPressed: () {
-                      Navigator.pop(context);
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) =>
+                                MyHomePage()), // Replace with your initial screen
+                        (Route<dynamic> route) =>
+                            false, // Removes all the previous routes
+                      );
                     },
                     icon: Icon(Icons.logout, color: Colors.white),
                     label: Text(
