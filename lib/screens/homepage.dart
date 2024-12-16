@@ -428,12 +428,12 @@ class _MyHomePageState extends State<MyHomePage> {
               AdminPage()), // Replace with your initial screen
       (Route<dynamic> route) => false, // Removes all the previous routes
     );
-    Navigator.push(
+    /* Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) =>
             AdminPage(), // Replace with your actual admin login page
       ),
-    ).then((value) => setState(() {}));
+    ).then((value) => setState(() {})); */
   }
 }
