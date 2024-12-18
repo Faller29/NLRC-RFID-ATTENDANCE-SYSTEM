@@ -73,7 +73,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(16.0),
             child: Container(
               height: MediaQuery.sizeOf(context).height / 1.5,
               width: double.maxFinite,
@@ -121,10 +121,25 @@ class _CustomDrawerState extends State<CustomDrawer> {
           ),
           ListTile(
             contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-            leading: Icon(Icons.admin_panel_settings),
-            title: Text(
-              'Admin Login',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            //leading: Icon(Icons.admin_panel_settings),
+            title: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.admin_panel_settings,
+                  color: Color.fromARGB(255, 60, 45, 194),
+                ),
+                SizedBox(
+                  width: 10,
+                ),
+                Text(
+                  'Admin Login',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Color.fromARGB(255, 60, 45, 194),
+                  ),
+                ),
+              ],
             ),
             onTap: () {
               // Navigate to admin login page

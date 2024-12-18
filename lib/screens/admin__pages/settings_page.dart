@@ -12,8 +12,8 @@ class _SettingsPageState extends State<SettingsPage> {
   final _emailController = TextEditingController();
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Padding(
+    return Center(
+      child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: SingleChildScrollView(
           // To allow scrolling in case of small screens
