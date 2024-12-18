@@ -45,6 +45,7 @@ class _AdminPageState extends State<AdminPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Color.fromARGB(255, 221, 221, 221),
       body: Row(
         children: [
           // Side Navigation Bar
@@ -114,9 +115,7 @@ class _AdminPageState extends State<AdminPage> {
                     onPressed: () {
                       Navigator.pushAndRemoveUntil(
                         context,
-                        MaterialPageRoute(
-                            builder: (context) =>
-                                MyHomePage()), // Replace with your initial screen
+                        MaterialPageRoute(builder: (context) => MyHomePage()),
                         (Route<dynamic> route) =>
                             false, // Removes all the previous routes
                       );

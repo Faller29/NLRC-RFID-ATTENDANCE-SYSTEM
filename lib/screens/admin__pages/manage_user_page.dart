@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/services.dart';
 import 'package:nlrc_rfid_scanner/assets/themeData.dart';
 import 'package:nlrc_rfid_scanner/backend/data/fetch.dart';
 //import 'package:nlrc_rfid_scanner/backend/data/users.dart';
@@ -197,6 +198,11 @@ class _ManageUserPageState extends State<ManageUserPage> {
       padding: const EdgeInsets.only(bottom: 10),
       child: TextField(
         controller: controller,
+        keyboardType:
+            label == 'RFID Number' ? TextInputType.number : TextInputType.text,
+        inputFormatters: label == 'RFID Number'
+            ? [FilteringTextInputFormatter.digitsOnly]
+            : [],
         decoration: InputDecoration(
           labelText: label,
           hintText: label == 'RFID Number'
