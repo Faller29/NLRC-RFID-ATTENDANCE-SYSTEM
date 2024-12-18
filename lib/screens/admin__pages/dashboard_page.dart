@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:iconly/iconly.dart';
 import 'package:intl/intl.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -10,15 +11,18 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
-  List<Map<String, dynamic>> users = []; // List to store user data
-  Map<String, double> workHours = {}; // Map to store work hours for each user
-  int loggedUsersCount = 0; // Count of users logged in today
+  List<Map<String, dynamic>> users = [];
+  Map<String, double> workHours = {};
+  int loggedUsersCount = 0;
   String nlrc = "National Labor Relations Commission";
+  PageController _pageController = PageController();
+  String selectedTimeRange = "Today"; // Default value
+
   @override
   void initState() {
     super.initState();
     _fetchUsers();
-    _fetchLoggedUsers(); // Fetch logged users count for today
+    _fetchLoggedUsers();
   }
 
   String getFormattedDate() {
@@ -120,81 +124,8 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.start,
       children: [
-        Card(
-          margin: const EdgeInsets.symmetric(horizontal: 50),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const Text(
-                  "Today's Workers Hour Metrics",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                AspectRatio(
-                  aspectRatio: 4,
-                  child: BarChart(
-                    BarChartData(
-                      alignment: BarChartAlignment.spaceAround,
-                      barTouchData: BarTouchData(
-                        touchTooltipData: BarTouchTooltipData(
-                          getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                            return BarTooltipItem(
-                              '${_getWorkerName(group.x)}\n',
-                              const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              children: [
-                                TextSpan(
-                                  text: '${rod.toY.toString()} hours',
-                                  style: const TextStyle(
-                                    color: Colors.yellowAccent,
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                      ),
-                      titlesData: FlTitlesData(
-                        leftTitles: const AxisTitles(
-                          axisNameWidget: null,
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            reservedSize: 50,
-                          ),
-                        ),
-                        bottomTitles: AxisTitles(
-                          axisNameWidget: null,
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            getTitlesWidget: _getBottomTitles,
-                          ),
-                        ),
-                        topTitles: const AxisTitles(drawBelowEverything: false),
-                        rightTitles: const AxisTitles(
-                          drawBelowEverything: false,
-                        ),
-                      ),
-                      borderData: FlBorderData(
-                        show: true,
-                        border: Border.all(color: Colors.grey, width: 1),
-                      ),
-                      barGroups: _getHourlyBarData(),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: Row(
@@ -275,6 +206,98 @@ class _DashboardPageState extends State<DashboardPage> {
                 width: 40,
               )
             ],
+          ),
+        ),
+        Card(
+          margin: const EdgeInsets.symmetric(horizontal: 50),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const Text(
+                  "Today's Workers Hour Metrics",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    IconButton(
+                      onPressed: () {},
+                      icon: Icon(IconlyBold.arrow_left_2),
+                    ),
+                    Text(
+                      //changes base on the page view
+                      "Today",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    IconButton(
+                      onPressed: () {},
+                      icon: Icon(IconlyBold.arrow_right_2),
+                    ),
+                  ],
+                ),
+                AspectRatio(
+                  aspectRatio: 4,
+                  child: BarChart(
+                    BarChartData(
+                      alignment: BarChartAlignment.spaceAround,
+                      barTouchData: BarTouchData(
+                        touchTooltipData: BarTouchTooltipData(
+                          getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                            return BarTooltipItem(
+                              '${_getWorkerName(group.x)}\n',
+                              const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              children: [
+                                TextSpan(
+                                  text: '${rod.toY.toString()} hours',
+                                  style: const TextStyle(
+                                    color: Colors.yellowAccent,
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                      titlesData: FlTitlesData(
+                        leftTitles: const AxisTitles(
+                          axisNameWidget: null,
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            reservedSize: 50,
+                          ),
+                        ),
+                        bottomTitles: AxisTitles(
+                          axisNameWidget: null,
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            getTitlesWidget: _getBottomTitles,
+                          ),
+                        ),
+                        topTitles: const AxisTitles(drawBelowEverything: false),
+                        rightTitles: const AxisTitles(
+                          drawBelowEverything: false,
+                        ),
+                      ),
+                      borderData: FlBorderData(
+                        show: true,
+                        border: Border.all(color: Colors.grey, width: 1),
+                      ),
+                      barGroups: _getHourlyBarData(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ],
