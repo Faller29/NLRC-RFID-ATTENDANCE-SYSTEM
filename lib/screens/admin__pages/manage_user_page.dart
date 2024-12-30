@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
 import 'package:nlrc_rfid_scanner/assets/themeData.dart';
 import 'package:nlrc_rfid_scanner/backend/data/fetch.dart';
+import 'package:shimmer_animation/shimmer_animation.dart';
 //import 'package:nlrc_rfid_scanner/backend/data/users.dart';
 
 class ManageUserPage extends StatefulWidget {
@@ -18,6 +21,10 @@ class _ManageUserPageState extends State<ManageUserPage> {
   final TextEditingController _positionController = TextEditingController();
   final TextEditingController _officeController = TextEditingController();
   String? _userIdToEdit;
+  DateTime _lastKeypressTime = DateTime.now();
+  String _rfidData = '';
+  Timer? _expirationTimer;
+  final FocusNode _focusNode = FocusNode();
 
   @override
   void initState() {
@@ -27,6 +34,87 @@ class _ManageUserPageState extends State<ManageUserPage> {
   @override
   void dispose() {
     super.dispose();
+    _focusNode.dispose();
+  }
+
+  void _onKey(KeyEvent event) async {
+    print('rubn');
+    if (event is KeyDownEvent) {
+      // Skip handling modifier keys (like Alt, Ctrl, Shift) or empty key labels
+      if (event.logicalKey.keyLabel.isEmpty) return;
+
+      final String data =
+          event.logicalKey.keyLabel; // Use keyLabel instead of debugName
+      print(data);
+
+      final DateTime currentTime = DateTime.now();
+      final Duration timeDifference = currentTime.difference(_lastKeypressTime);
+
+      setState(() {
+        _rfidData += data; // Accumulate only valid key inputs
+      });
+
+      // Start a 30ms timer to enforce expiration
+      _startExpirationTimer();
+
+      // Check if Enter key is pressed
+      if (event.logicalKey == LogicalKeyboardKey.enter) {
+        // Ensure RFID data is not empty and greater than 9 characters before processing
+        if (_rfidData.isNotEmpty && _rfidData.length >= 9) {
+          String filteredData = _filterRFIDData(_rfidData);
+          filteredData = '$filteredData';
+          print(filteredData);
+          Navigator.pop(context);
+          setState(() {
+            _rfidController.text = filteredData;
+          });
+          showDialog(
+            context: context,
+            builder: (context) {
+              return _buildUserFormDialog('Add User', _saveUser);
+            },
+          );
+
+          setState(() {
+            _rfidData = ''; // Clear RFID data after processing
+          });
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.symmetric(horizontal: 400, vertical: 10),
+              content: Text(
+                'RFID data is empty. Please try again',
+                textAlign: TextAlign.center,
+              ),
+              backgroundColor: Colors.redAccent,
+            ),
+          );
+        }
+      }
+      //}
+
+      _lastKeypressTime = currentTime; // Update the last keypress time
+    }
+  }
+
+  String _filterRFIDData(String data) {
+    return data.replaceAll(RegExp(r'[^0-9]'), '');
+  }
+
+  void _startExpirationTimer() {
+    if (_expirationTimer != null) {
+      _expirationTimer!.cancel(); // Cancel any existing timer
+    }
+
+    _expirationTimer = Timer(const Duration(milliseconds: 30), () {
+      if (_rfidData.isNotEmpty) {
+        debugPrint('Expiration timer triggered: Clearing RFID data.');
+        setState(() {
+          _rfidData = '';
+        });
+      }
+    });
   }
 
   @override
@@ -110,12 +198,103 @@ class _ManageUserPageState extends State<ManageUserPage> {
   // Show Add User Modal
   void _showAddUserModal() {
     _clearFormFields();
+    setState(() {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _focusNode.requestFocus();
+      });
+    });
     showDialog(
-      context: context,
-      builder: (context) {
-        return _buildUserFormDialog('Add New User', _saveUser);
-      },
-    );
+        barrierDismissible: false,
+        context: context,
+        builder: (context) {
+          return Card(
+            margin: EdgeInsets.symmetric(
+              horizontal: MediaQuery.sizeOf(context).width * 0.3,
+              vertical: MediaQuery.sizeOf(context).height * 0.3,
+            ),
+            elevation: 10.0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20.0),
+            ),
+            child: Shimmer(
+              colorOpacity: 0.8,
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: Padding(
+                        padding: const EdgeInsets.all(20.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Add User',
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            SizedBox(height: 10),
+                            Text(
+                              'Please scan your RFID to proceed.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.black54,
+                              ),
+                            ),
+                            SizedBox(height: 20),
+                            Container(
+                              padding: const EdgeInsets.all(15.0),
+                              decoration: BoxDecoration(
+                                color: Colors.blueAccent.withOpacity(0.2),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.rss_feed,
+                                size: 40,
+                                color: Colors.blueAccent,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Padding(
+                      padding: const EdgeInsets.all(10.0),
+                      child: ElevatedButton.icon(
+                        onPressed: () => Navigator.pop(context),
+                        icon: Icon(Icons.cancel, color: Colors.white),
+                        label: Text(
+                          'Cancel',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 12),
+                          backgroundColor: Colors.redAccent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30.0),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  KeyboardListener(
+                    focusNode: _focusNode,
+                    onKeyEvent: _onKey,
+                    child: Container(),
+                  ),
+                ],
+              ),
+            ),
+          );
+        });
   }
 
   // Show Edit User Modal
@@ -198,6 +377,9 @@ class _ManageUserPageState extends State<ManageUserPage> {
       padding: const EdgeInsets.only(bottom: 10),
       child: TextField(
         controller: controller,
+        readOnly: label == 'RFID Number'
+            ? true
+            : false, //this will make the text field read only if it is an rfid
         keyboardType:
             label == 'RFID Number' ? TextInputType.number : TextInputType.text,
         inputFormatters: label == 'RFID Number'
@@ -317,20 +499,66 @@ class _ManageUserPageState extends State<ManageUserPage> {
   }
 
 // Delete User from Firestore and Refresh the list
+  // Delete User from Firestore and Refresh the list
   void _deleteUser(String rfid) {
-    _firestore.collection('users').doc(rfid).delete().then((_) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        snackBarFailed('User deleted successfully!', context),
-      );
-      setState(() {
-        // Refresh the list after deleting a user
-        //fetchUsersFromFirebase(); // Ensure this fetches updated data
-      });
-    }).catchError((error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        snackBarFailed(error, context),
-      );
-    });
+    // Show a confirmation dialog before deleting
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            'Delete User',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: Text(
+            'Are you sure you want to delete this user? This action cannot be undone.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Close the dialog
+              },
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  color: Colors.lightGreen,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+              ),
+              onPressed: () {
+                Navigator.pop(context); // Close the dialog
+                // Proceed with deleting the user
+                _firestore.collection('users').doc(rfid).delete().then((_) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    snackBarFailed('User deleted successfully!', context),
+                  );
+                  setState(() {
+                    // Refresh the list after deleting a user
+                    // fetchUsersFromFirebase(); // Ensure this fetches updated data
+                  });
+                }).catchError((error) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    snackBarFailed(error.toString(), context),
+                  );
+                });
+              },
+              child: Text(
+                'Delete',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   // Fetch users from Firebase and update the list

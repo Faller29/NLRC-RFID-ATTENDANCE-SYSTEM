@@ -35,308 +35,302 @@ class _ScannedModalState extends State<ScannedModal> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Center(
-        child: Material(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-          child: Card(
-            color: Color.fromARGB(255, 234, 235, 250),
-            margin: EdgeInsets.symmetric(
-                horizontal: MediaQuery.of(context).size.width * 0.25,
-                vertical: MediaQuery.of(context).size.height * 0.2),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(15),
-            ),
-            elevation: 10,
-            child: Shimmer(
-              interval: Duration(seconds: 2),
-              colorOpacity: 0.5,
-              child: Stack(
-                children: [
-                  Positioned(
-                    right: 0,
-                    child: Image.asset(
-                      'lib/assets/images/modalBG.png',
-                      fit: BoxFit.cover,
-                      height: 400,
-                      width: MediaQuery.sizeOf(context).width / 2,
-                      opacity: const AlwaysStoppedAnimation(.1),
-                    ),
+        child: Card(
+          color: Color.fromARGB(255, 234, 235, 250),
+          margin: EdgeInsets.symmetric(
+              horizontal: MediaQuery.of(context).size.width * 0.25,
+              vertical: MediaQuery.of(context).size.height * 0.2),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          elevation: 10,
+          child: Shimmer(
+            interval: Duration(seconds: 2),
+            colorOpacity: 0.5,
+            child: Stack(
+              children: [
+                Positioned(
+                  right: 0,
+                  child: Image.asset(
+                    'lib/assets/images/modalBG.png',
+                    fit: BoxFit.cover,
+                    height: 400,
+                    width: MediaQuery.sizeOf(context).width / 2,
+                    opacity: const AlwaysStoppedAnimation(.1),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(10.0),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Image.asset(
-                                'lib/assets/images/NLRCnbg.png',
-                                fit: BoxFit.cover,
-                                height: 70,
-                                width: 70,
-                              ),
-                              const Column(
-                                children: [
-                                  Text(
-                                    'REPUBLIKA NG PILIPINAS',
-                                    style: TextStyle(
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                  Text(
-                                    'NATIONAL LABOR RELATIONS COMMISSION',
-                                    style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                  Text(
-                                    'EMPLOYEE IDENTIFICATION CARD',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              Image.asset(
-                                'lib/assets/images/bagongPilipinas.png',
-                                fit: BoxFit.cover,
-                                height: 70,
-                                width: 70,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Padding(
-                              padding: const EdgeInsets.all(15.0),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                    border: Border.all(
-                                      color: Colors.black54,
-                                    ),
-                                    borderRadius: BorderRadius.circular(
-                                      20,
-                                    ),
-                                    color: Colors.blueAccent.withOpacity(0.2)),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(5.0),
-                                  child: Image.asset(
-                                    'lib/assets/images/profile/male.png',
-                                    fit: BoxFit.cover,
-                                    height: 150,
-                                    width: 150,
-                                  ),
-                                ),
-                              ),
+                            Image.asset(
+                              'lib/assets/images/NLRCnbg.png',
+                              fit: BoxFit.cover,
+                              height: 70,
+                              width: 70,
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Column(
-                                children: [
-                                  Text(
-                                    widget.rfidData,
-                                    style: const TextStyle(
-                                      color: Colors.blueGrey,
-                                      fontSize: 32,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    mainAxisAlignment: MainAxisAlignment.start,
-                                    children: [
-                                      Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          const Text(
-                                            'Name:',
-                                            style: TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 18),
-                                          ),
-                                          const Text(
-                                            'Position:',
-                                            style: TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 18),
-                                          ),
-                                          const Text(
-                                            'Office:',
-                                            style: TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 18),
-                                          ),
-                                          SizedBox(
-                                            height: 15,
-                                          ),
-                                          const Text(
-                                            'Time out:',
-                                            style: TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16,
-                                                color: Colors.green),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            _formatTimestamp(widget.timestamp),
-                                            style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16,
-                                                color: Colors.green),
-                                          ),
-                                        ],
-                                      ),
-                                      SizedBox(
-                                        width: 20,
-                                      ),
-                                      Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            widget.userData['name'] ??
-                                                'Unknown',
-                                            style: TextStyle(
-                                                color: Colors.blueGrey,
-                                                fontSize: 18),
-                                          ),
-                                          Text(
-                                            widget.userData['position'] ??
-                                                'Unknown',
-                                            style: TextStyle(
-                                                color: Colors.blueGrey,
-                                                fontSize: 18),
-                                          ),
-                                          Text(
-                                            widget.userData['office'] ??
-                                                'Unknown',
-                                            style: TextStyle(
-                                                color: Colors.blueGrey,
-                                                fontSize: 18),
-                                          ),
-                                          SizedBox(
-                                            height: 15,
-                                          ),
-                                          const Text(
-                                            'Time in:',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16,
-                                              color: Colors.red,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            _formatTimestamp(widget.timestamp),
-                                            style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16,
-                                                color: Colors.redAccent),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            )
-                          ],
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Field type:',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              SizedBox(
-                                width: 20,
-                              ),
-                              DropdownButton<String>(
-                                value: _selectedJobType,
-                                focusColor: Colors.transparent,
-                                icon: Icon(
-                                  Icons.arrow_drop_down,
-                                  color: Colors.black,
-                                ),
-                                underline: Container(),
-                                items: _jobTypes.map((String type) {
-                                  return DropdownMenuItem<String>(
-                                    value: type,
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 12.0, horizontal: 16.0),
-                                      child: Text(type),
-                                    ),
-                                  );
-                                }).toList(),
-                                onChanged: (String? newValue) {
-                                  setState(() {
-                                    _selectedJobType = newValue;
-                                  });
-                                },
-                                hint: const Text(
-                                  'Select job type',
+                            const Column(
+                              children: [
+                                Text(
+                                  'REPUBLIKA NG PILIPINAS',
                                   style: TextStyle(
-                                      color: Color.fromARGB(255, 116, 1, 1),
+                                      fontSize: 22,
                                       fontWeight: FontWeight.bold),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            TextButton(
-                              onPressed: () {
-                                Navigator.of(context).pop(); // Close modal
-                              },
-                              child: const Text('Cancel'),
+                                Text(
+                                  'NATIONAL LABOR RELATIONS COMMISSION',
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                Text(
+                                  'EMPLOYEE IDENTIFICATION CARD',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
                             ),
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.greenAccent),
-                              onPressed: () async {
-                                if (_selectedJobType == null) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    snackBarFailed(
-                                        'Please select Job Field', context),
-                                  );
-                                } else {
-                                  if (widget.onRemoveNotification != null) {
-                                    widget
-                                        .onRemoveNotification!(); // Remove notification
-                                  }
-                                  await _saveAttendance(); // Save attendance to Firestore
-                                  //Navigator.of(context).pop();
-                                }
+                            Image.asset(
+                              'lib/assets/images/bagongPilipinas.png',
+                              fit: BoxFit.cover,
+                              height: 70,
+                              width: 70,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(15.0),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: Colors.black54,
+                                  ),
+                                  borderRadius: BorderRadius.circular(
+                                    20,
+                                  ),
+                                  color: Colors.blueAccent.withOpacity(0.2)),
+                              child: Padding(
+                                padding: const EdgeInsets.all(5.0),
+                                child: Image.asset(
+                                  'lib/assets/images/profile/male.png',
+                                  fit: BoxFit.cover,
+                                  height: 150,
+                                  width: 150,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              children: [
+                                Text(
+                                  widget.rfidData,
+                                  style: const TextStyle(
+                                    color: Colors.blueGrey,
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  children: [
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Name:',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 18),
+                                        ),
+                                        const Text(
+                                          'Position:',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 18),
+                                        ),
+                                        const Text(
+                                          'Office:',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 18),
+                                        ),
+                                        SizedBox(
+                                          height: 15,
+                                        ),
+                                        const Text(
+                                          'Time out:',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                              color: Colors.green),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          _formatTimestamp(widget.timestamp),
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                              color: Colors.green),
+                                        ),
+                                      ],
+                                    ),
+                                    SizedBox(
+                                      width: 20,
+                                    ),
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          widget.userData['name'] ?? 'Unknown',
+                                          style: TextStyle(
+                                              color: Colors.blueGrey,
+                                              fontSize: 18),
+                                        ),
+                                        Text(
+                                          widget.userData['position'] ??
+                                              'Unknown',
+                                          style: TextStyle(
+                                              color: Colors.blueGrey,
+                                              fontSize: 18),
+                                        ),
+                                        Text(
+                                          widget.userData['office'] ??
+                                              'Unknown',
+                                          style: TextStyle(
+                                              color: Colors.blueGrey,
+                                              fontSize: 18),
+                                        ),
+                                        SizedBox(
+                                          height: 15,
+                                        ),
+                                        const Text(
+                                          'Time in:',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                            color: Colors.red,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          _formatTimestamp(widget.timestamp),
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                              color: Colors.redAccent),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          )
+                        ],
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Field type:',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            SizedBox(
+                              width: 20,
+                            ),
+                            DropdownButton<String>(
+                              value: _selectedJobType,
+                              focusColor: Colors.transparent,
+                              icon: Icon(
+                                Icons.arrow_drop_down,
+                                color: Colors.black,
+                              ),
+                              underline: Container(),
+                              items: _jobTypes.map((String type) {
+                                return DropdownMenuItem<String>(
+                                  value: type,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 12.0, horizontal: 16.0),
+                                    child: Text(type),
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (String? newValue) {
+                                setState(() {
+                                  _selectedJobType = newValue;
+                                });
                               },
-                              child: const Text(
-                                'Submit',
-                                style: TextStyle(color: Colors.white),
+                              hint: const Text(
+                                'Select job type',
+                                style: TextStyle(
+                                    color: Color.fromARGB(255, 116, 1, 1),
+                                    fontWeight: FontWeight.bold),
                               ),
                             ),
                           ],
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          TextButton(
+                            onPressed: () {
+                              Navigator.of(context).pop(); // Close modal
+                            },
+                            child: const Text('Cancel'),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.greenAccent),
+                            onPressed: () async {
+                              if (_selectedJobType == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  snackBarFailed(
+                                      'Please select Job Field', context),
+                                );
+                              } else {
+                                if (widget.onRemoveNotification != null) {
+                                  widget
+                                      .onRemoveNotification!(); // Remove notification
+                                }
+                                await _saveAttendance(); // Save attendance to Firestore
+                                //Navigator.of(context).pop();
+                              }
+                            },
+                            child: const Text(
+                              'Submit',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
