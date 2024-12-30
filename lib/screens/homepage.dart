@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:nlrc_rfid_scanner/assets/themeData.dart';
-import 'package:nlrc_rfid_scanner/assets/data/users.dart';
+//import 'package:nlrc_rfid_scanner/assets/data/users.dart';
 import 'package:nlrc_rfid_scanner/main.dart';
 import 'package:nlrc_rfid_scanner/modals/scanned_modal.dart';
 import 'package:nlrc_rfid_scanner/screens/admin_page.dart';

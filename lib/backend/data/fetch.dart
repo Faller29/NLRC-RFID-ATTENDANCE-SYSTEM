@@ -50,18 +50,19 @@ Future<void> fetchDataAndGenerateDartFile() async {
     final List<User> userList = snapshot.docs.map((doc) {
       return User.fromMap(doc.data() as Map<String, dynamic>);
     }).toList();
+// This file was generated automatically. Do not modify.
+/* import 'package:nlrc_rfid_scanner/backend/data/fetch.dart';
 
+List<Map<String, dynamic>> users =  */
     // Create a Dart file content from the fetched data
     String dartFileContent = '''
-// This file was generated automatically. Do not modify.
-import 'package:nlrc_rfid_scanner/backend/data/fetch.dart';
 
-List<Map<String, dynamic>> users = ${jsonEncode(userList.map((e) => e.toMap()).toList())};
+${jsonEncode(userList.map((e) => e.toMap()).toList())}
 ''';
 
     // Specify the file path where the Dart file will be stored
     final directory = await getApplicationDocumentsDirectory();
-    final file = File('lib/assets/data/users.dart');
+    final file = File('${directory.path}/users.json');
 
     // Write the Dart file content to the file
     await file.writeAsString(dartFileContent);

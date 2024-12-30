@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'package:nlrc_rfid_scanner/assets/data/users.dart';
+//import 'package:nlrc_rfid_scanner/assets/data/users.dart';
 import 'package:nlrc_rfid_scanner/main.dart';
 import 'package:nlrc_rfid_scanner/modals/scanned_modal.dart';
 
