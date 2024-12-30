@@ -14,11 +14,104 @@ class ReportPage extends StatefulWidget {
 class _ReportPage extends State<ReportPage> {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   DateTime selectedDate = DateTime.now();
+  DateTimeRange? selectedDateRange;
 
   void adjustDate(int days) {
     setState(() {
       selectedDate = selectedDate.add(Duration(days: days));
     });
+  }
+
+  Future<void> pickDateRange() async {
+    final DateTimeRange? pickedRange = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000), // Allow going back to the year 1900
+      lastDate: DateTime.now(), // Up to the current date
+      initialDateRange: selectedDateRange ??
+          DateTimeRange(
+            start: DateTime.now().subtract(const Duration(days: 30)),
+            end: DateTime.now(),
+          ),
+    );
+
+    if (pickedRange != null) {
+      setState(() {
+        selectedDateRange = pickedRange;
+      });
+    }
+  }
+
+  Future<List<Map<String, String>>> fetchAttendanceData1() async {
+    try {
+      if (selectedDateRange == null) return [];
+      Map<String, Map<String, dynamic>> combinedData = {};
+
+      DateTime currentDate = selectedDateRange!.start;
+      while (currentDate.isBefore(selectedDateRange!.end) ||
+          currentDate.isAtSameMomentAs(selectedDateRange!.end)) {
+        String yearMonth =
+            DateFormat('MMM_yyyy').format(currentDate); // e.g., Dec_2024
+        String day = DateFormat('dd').format(currentDate); // e.g., 12
+
+        CollectionReference dayCollection =
+            firestore.collection('attendances').doc(yearMonth).collection(day);
+
+        QuerySnapshot snapshot = await dayCollection.get();
+
+        for (var doc in snapshot.docs) {
+          Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+          String id = doc.id;
+          String name = data['name'] ?? '';
+
+          if (!combinedData.containsKey(id)) {
+            combinedData[id] = {
+              'name': name,
+              'totalHours': 0,
+            };
+          }
+
+          DateTime? timeIn =
+              data['timeIn'] != null ? data['timeIn'].toDate() : null;
+          DateTime? timeOut =
+              data['timeOut'] != null ? data['timeOut'].toDate() : null;
+          combinedData[id]!['totalHours'] +=
+              _calculateTotalMinutes(timeIn, timeOut);
+        }
+
+        currentDate = currentDate.add(Duration(days: 1));
+      }
+
+      return combinedData.entries.map((entry) {
+        int totalMinutes = entry.value['totalHours'] as int;
+        int hours = totalMinutes ~/ 60;
+        int minutes = totalMinutes % 60;
+
+        // Determine the correct singular or plural form for hours and minutes
+        String hourText = hours == 1 ? 'hour' : 'hours';
+        String minuteText = minutes == 1 ? 'minute' : 'minutes';
+
+        return {
+          'name': entry.value['name'] as String,
+          'totalHours':
+              '${hours > 0 ? '$hours $hourText ' : ''}${minutes > 0 ? '$minutes $minuteText' : ''}'
+                  .trim(),
+        };
+      }).toList();
+    } catch (e) {
+      debugPrint('Error fetching attendance data: $e');
+      return [];
+    }
+  }
+
+  int _calculateTotalMinutes(DateTime? timeIn, DateTime? timeOut) {
+    if (timeIn == null || timeOut == null) return 0;
+    try {
+      Duration diff = timeOut.difference(timeIn);
+      return diff.inMinutes;
+    } catch (e) {
+      debugPrint('Error calculating total minutes: $e');
+      return 0;
+    }
   }
 
   Future<void> pickDate() async {
@@ -49,18 +142,27 @@ class _ReportPage extends State<ReportPage> {
       return snapshot.docs.map((doc) {
         Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
 
+        DateTime? timeIn =
+            data['timeIn'] != null ? (data['timeIn']).toDate() : null;
+        DateTime? timeOut =
+            data['timeOut'] != null ? (data['timeOut']).toDate() : null;
+
+        int totalMinutes = _calculateTotalMinutes(timeIn, timeOut);
+        int hours = totalMinutes ~/ 60;
+        int minutes = totalMinutes % 60;
+
+        // Determine the correct singular or plural form for hours and minutes
+        String hourText = hours == 1 ? 'hour' : 'hours';
+        String minuteText = minutes == 1 ? 'minute' : 'minutes';
+
         return {
           'name': (data['name'] ?? '').toString(),
-          'timeIn': (data['timeIn'] != null)
-              ? DateFormat('hh:mm a').format((data['timeIn']).toDate())
-              : '',
-          'timeOut': (data['timeOut'] != null)
-              ? DateFormat('hh:mm a').format((data['timeOut']).toDate())
-              : '',
-          'totalHours': _calculateTotalHours(
-            data['timeIn'] != null ? (data['timeIn']).toDate() : null,
-            data['timeOut'] != null ? (data['timeOut']).toDate() : null,
-          ),
+          'timeIn': timeIn != null ? DateFormat('hh:mm a').format(timeIn) : '',
+          'timeOut':
+              timeOut != null ? DateFormat('hh:mm a').format(timeOut) : '',
+          'totalHours':
+              '${hours > 0 ? '$hours $hourText ' : ''}${minutes > 0 ? '$minutes $minuteText' : ''}'
+                  .trim(),
         };
       }).toList();
     } catch (e) {
@@ -177,135 +279,252 @@ class _ReportPage extends State<ReportPage> {
 
   @override
   Widget build(BuildContext context) {
+    final DateTime currentDate = DateTime.now();
+    final bool isForwardDisabled =
+        selectedDate.add(Duration(days: 1)).isAfter(currentDate);
+
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      body: FutureBuilder<List<Map<String, String>>>(
-        future: fetchAttendanceData(),
+      body: FutureBuilder<List<List<Map<String, String>>>>(
+        future: Future.wait([fetchAttendanceData1(), fetchAttendanceData()]),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
             return const Center(child: Text('Error fetching data'));
-          }
-
-          final attendanceData = snapshot.data ?? [];
-
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Expanded(
-                      child: Padding(
-                        padding: EdgeInsets.fromLTRB(0, 12, 0, 12),
-                        child: Text(
-                          'REPORT ANALYSIS',
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: Color.fromRGBO(55, 71, 79, 1),
+          } else {
+            final attendanceData1 = snapshot.data?[0] ?? [];
+            final attendanceData = snapshot.data?[1] ?? [];
+            return Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(0, 12, 0, 12),
+                          child: Text(
+                            'REPORT ANALYSIS',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Color.fromRGBO(55, 71, 79, 1),
+                            ),
+                            textAlign: TextAlign.left,
                           ),
-                          textAlign: TextAlign.left,
                         ),
                       ),
-                    ),
-                    SizedBox(
-                      height: 32.5,
-                      child: TextButton(
+                      SizedBox(
+                        height: 33,
+                        child: TextButton(
+                          style: TextButton.styleFrom(
+                            backgroundColor:
+                                const Color.fromRGBO(69, 90, 100, 1),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 12,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          onPressed: pickDateRange,
+                          child: const Text(
+                            'SELECT RANGE',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 16.0, right: 5.0),
+                        child: TextButton(
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color.fromRGBO(69, 90, 100, 1),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              selectedDateRange = null; // Reset the range
+                            });
+                          },
+                          child: const Text(
+                            'RESET TO DEFAULT VIEW',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      TextButton(
                         style: TextButton.styleFrom(
-                          backgroundColor: const Color.fromRGBO(69, 90, 100, 1),
+                          backgroundColor: Color.fromRGBO(69, 90, 100, 1),
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
+                            horizontal: 36,
                             vertical: 12,
                           ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        onPressed: pickDate,
+                        onPressed: generateAndPrintPDF,
                         child: const Text(
-                          'SELECT RANGE',
+                          'GENERATE',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 16,
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    TextButton(
-                      style: TextButton.styleFrom(
-                        backgroundColor: Color.fromRGBO(69, 90, 100, 1),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 36,
-                          vertical: 12,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      onPressed: generateAndPrintPDF,
-                      child: const Text(
-                        'GENERATE',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const Divider(
-                  color: Color.fromRGBO(55, 71, 79, 1),
-                  thickness: 3,
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back),
-                      onPressed: () => adjustDate(-1),
-                    ),
-                    TextButton(
-                      onPressed: pickDate,
+                    ],
+                  ),
+                  const Divider(
+                    color: Color.fromRGBO(55, 71, 79, 1),
+                    thickness: 3,
+                  ),
+                  if (selectedDateRange != null) ...[
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
                       child: Text(
-                        DateFormat('MMMM d, y').format(selectedDate),
+                        'Selected Range: ${DateFormat.yMMMd().format(selectedDateRange!.start)} - ${DateFormat.yMMMd().format(selectedDateRange!.end)}',
                         style: const TextStyle(
                           fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(55, 71, 79, 1),
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black54,
                         ),
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.arrow_forward),
-                      onPressed: () => adjustDate(1),
-                    ),
-                  ],
-                ),
-                if (attendanceData.isEmpty)
-                  Expanded(
-                    child: Center(
-                      child: const Text(
-                        'No records found for this date',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey,
+                    if (attendanceData1.isEmpty)
+                      Expanded(
+                        child: Center(
+                          child: const Text(
+                            'No records found for this date range',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      Expanded(
+                        child: Table(
+                          border: TableBorder.all(color: Colors.grey, width: 1),
+                          columnWidths: const {
+                            0: FlexColumnWidth(2),
+                            1: FlexColumnWidth(3),
+                          },
+                          children: [
+                            TableRow(
+                              decoration: const BoxDecoration(
+                                color: Colors.blueGrey,
+                              ),
+                              children: const [
+                                Padding(
+                                  padding: EdgeInsets.all(8.0),
+                                  child: Text(
+                                    'Name',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                                Padding(
+                                  padding: EdgeInsets.all(8.0),
+                                  child: Text(
+                                    'Total Hours',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            ...attendanceData1.map((employee) {
+                              return TableRow(
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Text(
+                                      employee['name'] ?? '',
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Text(
+                                      employee['totalHours'] ?? '',
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }).toList(),
+                          ],
                         ),
                       ),
-                    ),
-                  )
-                else
-                  Expanded(
-                    child: Column(
+                  ] else ...[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Table(
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back),
+                          onPressed: () => adjustDate(-1),
+                        ),
+                        TextButton(
+                          onPressed: pickDate,
+                          child: Text(
+                            DateFormat('MMMM d, y').format(selectedDate),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color.fromRGBO(55, 71, 79, 1),
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.arrow_forward),
+                          onPressed:
+                              isForwardDisabled ? null : () => adjustDate(1),
+                        ),
+                      ],
+                    ),
+                    if (attendanceData.isEmpty)
+                      Expanded(
+                        child: Center(
+                          child: const Text(
+                            'No records found for this date',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      Expanded(
+                        child: Table(
                           border: TableBorder.all(color: Colors.grey, width: 1),
                           columnWidths: const {
                             0: FlexColumnWidth(2),
@@ -401,12 +620,12 @@ class _ReportPage extends State<ReportPage> {
                             }).toList(),
                           ],
                         ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-          );
+                      ),
+                  ],
+                ],
+              ),
+            );
+          }
         },
       ),
     );
