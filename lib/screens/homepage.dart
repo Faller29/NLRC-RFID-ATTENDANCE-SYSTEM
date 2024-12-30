@@ -137,17 +137,18 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  bool _checkRFIDExists(String rfid) {
+  /* bool _checkRFIDExists(String rfid) {
+    print(localUsers);
     for (var user in localUsers) {
       if (user['rfid'] == rfid) {
         return true; // RFID exists in the local list
       }
     }
     return false; // RFID does not exist
-  }
+  } */
 
 // Check if RFID exists in the local users list
-  /* bool _checkRFIDExists(String rfid) {
+  bool _checkRFIDExists(String rfid) {
     // Look through the users list and check if any entry matches the RFID
     for (var user in users) {
       if (user['rfid'] == rfid) {
@@ -155,7 +156,7 @@ class _MyHomePageState extends State<MyHomePage> {
       }
     }
     return false; // RFID does not exist
-  } */
+  }
 
   bool _isRFIDInput(String data, Duration timeDifference) {
     // Check if the input is part of an RFID scan
@@ -195,6 +196,10 @@ class _MyHomePageState extends State<MyHomePage> {
         _isModalOpen = true; // Track that modal is open
       });
 
+      // Find the index of the RFID in the awayModeNotifications
+      final notificationIndex = _awayModeNotifications
+          .indexWhere((notification) => notification.contains(rfidData));
+
       showDialog(
         context: context,
         barrierDismissible:
@@ -204,7 +209,15 @@ class _MyHomePageState extends State<MyHomePage> {
             rfidData: rfidData,
             timestamp: timestamp,
             userData: matchedUser, // Pass the matched user data
-            onRemoveNotification: onRemoveNotification, // Pass callback
+            onRemoveNotification: () {
+              // Pass the index to remove the correct notification
+              if (notificationIndex != -1) {
+                setState(() {
+                  _awayModeNotifications.removeAt(
+                      notificationIndex); // Remove notification by index
+                });
+              }
+            },
           );
         },
       ).then((_) {
@@ -224,10 +237,19 @@ class _MyHomePageState extends State<MyHomePage> {
   // Add RFID data to notifications list in "Away" mode
   void _addToAwayModeNotifications(String rfidData) {
     final DateTime currentTime = DateTime.now(); // Record the timestamp
-    setState(() {
-      _awayModeNotifications
-          .add('$rfidData|$currentTime'); // Combine RFID and timestamp
-    });
+
+    // Check if the RFID data already exists in the notifications list
+    final exists = _awayModeNotifications
+        .any((notification) => notification.contains(rfidData));
+
+    if (!exists) {
+      setState(() {
+        _awayModeNotifications.add(
+            '$rfidData|$currentTime'); // Add only if not already in the list
+      });
+    } else {
+      debugPrint('RFID data already exists in the notifications list.');
+    }
   }
 
   // Switch mode between "Receive" and "Away"
@@ -430,19 +452,18 @@ class _MyHomePageState extends State<MyHomePage> {
 
 // Navigate to the admin login page
   void _navigateToAdminLogin(BuildContext context) {
-    Navigator.pushAndRemoveUntil(
+    /* Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
           builder: (context) =>
-              AdminPage()), // Replace with your initial screen
+              AdminPage()), 
       (Route<dynamic> route) => false, // Removes all the previous routes
-    );
-    /* Navigator.push(
+    ); */
+    Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) =>
-            AdminPage(), // Replace with your actual admin login page
+        builder: (context) => AdminPage(),
       ),
-    ).then((value) => setState(() {})); */
+    );
   }
 }

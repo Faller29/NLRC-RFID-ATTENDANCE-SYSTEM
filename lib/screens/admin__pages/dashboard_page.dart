@@ -16,6 +16,8 @@ class _DashboardPageState extends State<DashboardPage> {
   Map<String, double> workHours = {};
   Map<String, double> weeklyWorkHours = {}; // For weekly aggregation
   Map<String, double> monthlyWorkHours = {}; // For monthly aggregation
+  Map<String, double> yearlyWorkHours = {};
+
   int loggedUsersCount = 0;
   String nlrc = "National Labor Relations Commission";
   PageController _pageController = PageController();
@@ -26,7 +28,9 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   void initState() {
     super.initState();
-    _fetchDatas();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchDatas();
+    });
   }
 
   @override
@@ -44,7 +48,6 @@ class _DashboardPageState extends State<DashboardPage> {
   Future<void> _fetchDatas() async {
     await fetchUsers();
     await fetchLoggedUsers();
-    await fetchYearlyAttendanceData();
   }
 
   // Fetch user data from Firebase
@@ -66,7 +69,7 @@ class _DashboardPageState extends State<DashboardPage> {
       });
 
       // Fetch attendance data for each user
-      fetchAttendanceData();
+      await fetchAttendanceData();
     } catch (e) {
       debugPrint('Error fetching users: $e');
     }
@@ -133,8 +136,9 @@ class _DashboardPageState extends State<DashboardPage> {
           }
         }
       }
-      _fetchWeeklyAttendanceData();
-      _fetchMonthlyAttendanceData();
+      await _fetchWeeklyAttendanceData();
+      await _fetchMonthlyAttendanceData();
+      await fetchYearlyAttendanceData();
     } catch (e) {
       debugPrint('Error fetching attendance data: $e');
     }
@@ -191,38 +195,24 @@ class _DashboardPageState extends State<DashboardPage> {
   Future<void> _fetchMonthlyAttendanceData() async {
     try {
       final today = DateTime.now();
-      final startOfMonth =
-          DateTime(today.year, today.month, 1); // Start of the month
+      final monthYear =
+          DateFormat('MMM_yyyy').format(today); // Get current month and year
 
       for (var user in users) {
         final userId = user['rfid'];
         double totalMonthlyHours = 0;
 
-        // Iterate over the days in the current month
-        for (int i = 0; i < DateTime(today.year, today.month + 1, 0).day; i++) {
-          final day = startOfMonth.add(Duration(days: i));
-          final monthYear = DateFormat('MMM_yyyy').format(day);
-          final dayString = DateFormat('dd').format(day);
+        final totalHoursRef = firestore
+            .collection('attendances')
+            .doc(monthYear)
+            .collection('total_hours')
+            .doc(userId);
 
-          final attendanceRef = firestore
-              .collection('attendances')
-              .doc(monthYear)
-              .collection(dayString)
-              .doc(userId);
+        final totalHoursDoc = await totalHoursRef.get();
 
-          final attendanceDoc = await attendanceRef.get();
-          if (attendanceDoc.exists) {
-            final data = attendanceDoc.data();
-            final timeIn = (data?['timeIn'] as Timestamp?)?.toDate();
-            final timeOut = (data?['timeOut'] as Timestamp?)?.toDate();
-
-            if (timeIn != null && timeOut != null) {
-              final workedDuration = timeOut.difference(timeIn);
-              final workedHours = workedDuration.inHours +
-                  (workedDuration.inMinutes.remainder(60) / 60);
-              totalMonthlyHours += workedHours;
-            }
-          }
+        if (totalHoursDoc.exists) {
+          final data = totalHoursDoc.data();
+          totalMonthlyHours = data?['totalHours'] ?? 0.0;
         }
 
         setState(() {
@@ -234,10 +224,10 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  // Fetch attendance data for the year
-  Future<void> fetchYearlyAttendanceData() async {
+  /* Future<void> fetchYearlyAttendanceData() async {
     try {
-      final today = DateTime.now(); // Current date
+      final currentYear =
+          DateTime.now().year; // Dynamically determine the current year
 
       for (var user in users) {
         final userId = user['rfid'];
@@ -245,35 +235,95 @@ class _DashboardPageState extends State<DashboardPage> {
 
         // Iterate over each month of the current year
         for (int month = 1; month <= 12; month++) {
-          final monthDate = DateTime(today.year, month, 1);
-          final monthYear = DateFormat('MMM_yyyy').format(monthDate);
+          final monthDate = DateTime(currentYear, month, 1);
+          final monthYear =
+              DateFormat('MMM_yyyy').format(monthDate); // Example: Dec_2024
+          // Determine the total number of days in the month
+          final totalDaysInMonth = DateTime(currentYear, month + 1, 0).day;
 
-          final attendanceRef = firestore
-              .collection('attendances')
-              .doc(monthYear)
-              .collection(
-                  DateFormat('dd').format(today)) // All days of the month
-              .doc(userId);
+          for (int day = 1; day <= totalDaysInMonth; day++) {
+            final everyday = monthDate.add(Duration(days: day));
 
-          final attendanceDoc = await attendanceRef.get();
-          if (attendanceDoc.exists) {
-            final data = attendanceDoc.data();
-            final timeIn = (data?['timeIn'] as Timestamp?)?.toDate();
-            final timeOut = (data?['timeOut'] as Timestamp?)?.toDate();
+            // Reference the specific day within the month's collection
+            final days = DateFormat('dd').format(everyday);
+            final dayRef = firestore
+                .collection('attendances')
+                .doc(monthYear)
+                .collection(days)
+                .doc(userId);
 
-            if (timeIn != null && timeOut != null) {
-              final workedDuration = timeOut.difference(timeIn);
-              final workedHours = workedDuration.inHours +
-                  (workedDuration.inMinutes.remainder(60) / 60);
-              totalYearlyHours += workedHours;
+            final attendanceDoc = await dayRef.get();
+            if (attendanceDoc.exists) {
+              final data = attendanceDoc.data();
+              final timeIn = (data?['timeIn'] as Timestamp?)?.toDate();
+              final timeOut = (data?['timeOut'] as Timestamp?)?.toDate();
+
+              if (timeIn != null && timeOut != null) {
+                final workedDuration = timeOut.difference(timeIn);
+                final workedHours = workedDuration.inHours +
+                    (workedDuration.inMinutes.remainder(60) / 60);
+                totalYearlyHours += workedHours;
+              }
             }
           }
         }
-
+        //print(yearlyWorkHours[userId]);
         setState(() {
-          workHours[userId] = totalYearlyHours;
+          yearlyWorkHours[userId] = totalYearlyHours;
         });
       }
+
+      // Set loading state to false
+      setState(() {
+        isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('Error fetching yearly attendance data: $e');
+    }
+  } */
+
+  Future<void> fetchYearlyAttendanceData() async {
+    try {
+      final currentYear =
+          DateTime.now().year; // Dynamically determine the current year
+
+      for (var user in users) {
+        final userId = user['rfid'];
+        double totalYearlyHours = 0;
+
+        // Iterate over each month of the current year
+        for (int month = 1; month <= 12; month++) {
+          final monthDate = DateTime(currentYear, month, 1);
+          final monthYear =
+              DateFormat('MMM_yyyy').format(monthDate); // Example: Dec_2024
+
+          // Reference the user's total hours document for the specific month
+          final totalHoursRef = firestore
+              .collection('attendances')
+              .doc(monthYear) // Collection for the current month/year
+              .collection('total_hours') // Separate collection for total hours
+              .doc(userId); // Document for the specific user (RFID)
+
+          final totalHoursDoc = await totalHoursRef.get();
+
+          if (totalHoursDoc.exists) {
+            final data = totalHoursDoc.data();
+            final totalHours = data?['totalHours'] ?? 0.0;
+
+            // Add the total monthly hours to the yearly total
+            totalYearlyHours += totalHours;
+          } else {
+            print('No total hours data for user $userId in $monthYear');
+          }
+        }
+
+        // Update yearlyWorkHours for the user
+        setState(() {
+          yearlyWorkHours[userId] = totalYearlyHours;
+        });
+      }
+
+      // Set loading state to false
       setState(() {
         isLoading = false;
       });
@@ -524,7 +574,10 @@ class _DashboardPageState extends State<DashboardPage> {
                                                 : selectedTimeRange ==
                                                         "This Month"
                                                     ? _getMonthlyBarData()
-                                                    : _getYearlyBarData()),
+                                                    : selectedTimeRange ==
+                                                            "This Year"
+                                                        ? _getYearlyBarData()
+                                                        : _getYearlyBarData()),
                                   ),
                                 ),
                               ),
@@ -608,12 +661,13 @@ class _DashboardPageState extends State<DashboardPage> {
                               ? weeklyWorkHours
                               : selectedTimeRange == "This Month"
                                   ? monthlyWorkHours
-                                  : workHours,
+                                  : yearlyWorkHours,
                     ).map((worker) {
                       return ListTile(
                         leading: Icon(Icons.star, color: Colors.amber),
                         title: Text(worker['name']),
-                        trailing: Text("${worker['workHours']} hrs"),
+                        trailing: Text(
+                            "${worker['workHours'].toStringAsFixed(1)} hrs"),
                       );
                     }).toList(),
                   ],
@@ -738,12 +792,12 @@ class _DashboardPageState extends State<DashboardPage> {
   List<BarChartGroupData> _getYearlyBarData() {
     return List.generate(users.length, (index) {
       final userId = users[index]['rfid'];
-      final workedHours = workHours[userId] ?? 0;
+      final workedHoursY = yearlyWorkHours[userId] ?? 0;
       return BarChartGroupData(
         x: index,
         barRods: [
           BarChartRodData(
-            toY: double.parse(workedHours.toStringAsFixed(1)),
+            toY: double.parse(workedHoursY.toStringAsFixed(1)),
             color: Colors.greenAccent,
             width: 20,
             borderRadius: const BorderRadius.only(

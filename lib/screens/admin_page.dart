@@ -113,12 +113,7 @@ class _AdminPageState extends State<AdminPage> {
                           horizontal: 20, vertical: 15),
                     ),
                     onPressed: () {
-                      Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(builder: (context) => MyHomePage()),
-                        (Route<dynamic> route) =>
-                            false, // Removes all the previous routes
-                      );
+                      Navigator.pop(context);
                     },
                     icon: Icon(Icons.logout, color: Colors.white),
                     label: Text(

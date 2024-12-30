@@ -15,12 +15,12 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  await fetchUsers();
-  //await fetchDataAndGenerateDartFile();
+  //await fetchUsers();
+  await fetchDataAndGenerateDartFile();
   runApp(const MyApp());
 }
 
-Future<void> fetchUsers() async {
+/* Future<void> fetchUsers() async {
   // Simulating fetching users from Firebase Firestore
   final snapshot = await FirebaseFirestore.instance.collection('users').get();
   localUsers = snapshot.docs.map((doc) {
@@ -30,7 +30,7 @@ Future<void> fetchUsers() async {
       'position': doc['position'],
     };
   }).toList();
-}
+} */
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
