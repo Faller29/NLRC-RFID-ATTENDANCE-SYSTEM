@@ -5,6 +5,7 @@ import 'package:pdf/widgets.dart' as pw; // PDF Widgets
 import 'package:printing/printing.dart'; // For printing PDFs
 import 'package:flutter/services.dart'; // For loading images
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:nlrc_rfid_scanner/assets/themeData.dart';
 
 class ReportPage extends StatefulWidget {
   @override
@@ -22,19 +23,304 @@ class _ReportPage extends State<ReportPage> {
     });
   }
 
-  Future<void> pickDateRange() async {
-    final DateTimeRange? pickedRange = await showDateRangePicker(
+  @override
+  void dispose() {
+    _timeInController.dispose();
+    _timeOutController.dispose();
+    super.dispose();
+  }
+
+  // Add controllers for timeIn and timeOut
+  final TextEditingController _timeInController = TextEditingController();
+  final TextEditingController _timeOutController = TextEditingController();
+  String? _userIdToEdit;
+  void _showEditAttendanceModal(
+      String? userId, String yearMonth, String day, Map<String, dynamic> user) {
+    _userIdToEdit = userId;
+
+    // Handle both String and Timestamp cases
+    _timeInController.text = _parseTime(user['timeIn']);
+    _timeOutController.text = _parseTime(user['timeOut']);
+
+    showDialog(
       context: context,
-      firstDate: DateTime(2000), // Allow going back to the year 1900
-      lastDate: DateTime.now(), // Up to the current date
-      initialDateRange: selectedDateRange ??
-          DateTimeRange(
-            start: DateTime.now().subtract(const Duration(days: 30)),
-            end: DateTime.now(),
+      builder: (context) {
+        return _buildAttendanceFormDialog(
+            () => _updateAttendance(yearMonth, day));
+      },
+    );
+  }
+
+  String _parseTime(dynamic time) {
+    if (time is Timestamp) {
+      return DateFormat('hh:mm a').format(time.toDate());
+    } else if (time is String) {
+      return time;
+    }
+    return '';
+  }
+
+  void _selectTime(
+    BuildContext context,
+    TextEditingController controller,
+    String label,
+  ) async {
+    // Parse the existing time in the controller to retain its date
+    DateTime originalDateTime = DateFormat('hh:mm a').parse(controller.text);
+
+    final initialTime = TimeOfDay.fromDateTime(originalDateTime);
+
+    // Show the time picker dialog
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: initialTime,
+      helpText: 'Select $label',
+    );
+
+    if (pickedTime != null) {
+      // Combine the original date with the new time selected
+      final updatedDateTime = DateTime(
+        originalDateTime.year,
+        originalDateTime.month,
+        originalDateTime.day,
+        pickedTime.hour,
+        pickedTime.minute,
+      );
+
+      // Update the controller text with the new time while retaining the original date
+      controller.text = DateFormat('hh:mm a').format(updatedDateTime);
+    }
+  }
+
+  void _updateAttendance(String yearMonth, String day) {
+    final timeInText = _timeInController.text.trim();
+    final timeOutText = _timeOutController.text.trim();
+
+    try {
+      // Parse input times
+      final timeIn = DateFormat('hh:mm a').parse(timeInText);
+      final timeOut = DateFormat('hh:mm a').parse(timeOutText);
+
+      // Use current date as selected date
+
+      final updatedTimeIn = DateTime(
+        selectedDate.year,
+        selectedDate.month,
+        selectedDate.day,
+        timeIn.hour,
+        timeIn.minute,
+      );
+      final updatedTimeOut = DateTime(
+        selectedDate.year,
+        selectedDate.month,
+        selectedDate.day,
+        timeOut.hour,
+        timeOut.minute,
+      );
+
+      // Validate time order
+      if (updatedTimeIn.isAfter(updatedTimeOut)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          snackBarFailed('Time In must be before Time Out.', context),
+        );
+        return;
+      }
+
+      // Construct Firestore document reference
+
+      final attendanceRef = firestore
+          .collection('attendances') // Top-level collection
+          .doc(yearMonth) // Document for yearMonth (e.g., Dec_2024)
+          .collection(day) // Collection for the day (e.g., "12")
+          .doc(_userIdToEdit); // Document for the user ID
+      print('Updating document at: attendances/$yearMonth/$day/$_userIdToEdit');
+      // Debugging: Print document path
+
+      // Update attendance in Firestore
+      attendanceRef.update({
+        'timeIn': Timestamp.fromDate(updatedTimeIn),
+        'timeOut': Timestamp.fromDate(updatedTimeOut),
+      }).then((_) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          snackBarSuccess('Attendance updated successfully!', context),
+        );
+      }).catchError((error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          snackBarFailed('Failed to update attendance: $error', context),
+        );
+      });
+    } catch (e) {
+      // Handle invalid time format
+      ScaffoldMessenger.of(context).showSnackBar(
+        snackBarFailed('Invalid time format. Please use hh:mm a.', context),
+      );
+    }
+  }
+
+  Widget _buildAttendanceFormDialog(VoidCallback onSave) {
+    return Dialog(
+      insetPadding: const EdgeInsets.all(16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Edit Attendance',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            SizedBox(height: 16),
+            _buildTimePicker('Time In', _timeInController),
+            SizedBox(height: 8),
+            _buildTimePicker('Time Out', _timeOutController),
+            SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton.icon(
+                  icon: Icon(Icons.close),
+                  label: Text('Cancel'),
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                  ),
+                ),
+                ElevatedButton.icon(
+                  icon: Icon(Icons.save),
+                  label: Text('Save'),
+                  onPressed: onSave,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimePicker(String label, TextEditingController controller) {
+    return GestureDetector(
+      onTap: () => _selectTime(context, controller, label),
+      child: AbsorbPointer(
+        child: TextFormField(
+          controller: controller,
+          decoration: InputDecoration(
+            labelText: label,
+            border: OutlineInputBorder(),
+            suffixIcon: Icon(Icons.access_time),
           ),
+          readOnly: true,
+        ),
+      ),
+    );
+  }
+
+// Helper function to build text fields
+  Future<void> pickCustomDateRange(BuildContext parentContext) async {
+    DateTime startDate = selectedDateRange?.start ??
+        DateTime.now().subtract(const Duration(days: 30));
+    DateTime endDate = selectedDateRange?.end ?? DateTime.now();
+
+    final pickedRange = await showDialog<DateTimeRange>(
+      context: parentContext,
+      builder: (BuildContext dialogContext) {
+        DateTime tempStart = startDate;
+        DateTime tempEnd = endDate;
+
+        return StatefulBuilder(
+          builder: (BuildContext dialogContext, StateSetter setState) {
+            return AlertDialog(
+              title: const Text('Select Date Range'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Start Date:'),
+                  ElevatedButton(
+                    onPressed: () async {
+                      final picked = await showDatePicker(
+                        context: dialogContext,
+                        initialDate: tempStart,
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime.now(),
+                      );
+                      if (picked != null) {
+                        setState(() {
+                          tempStart = picked;
+                        });
+                      }
+                    },
+                    child: Text(
+                      '${tempStart.toLocal()}'.split(' ')[0],
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text('End Date:'),
+                  ElevatedButton(
+                    onPressed: () async {
+                      final picked = await showDatePicker(
+                        context: dialogContext,
+                        initialDate: tempEnd,
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime.now(),
+                      );
+                      if (picked != null) {
+                        setState(() {
+                          tempEnd = picked;
+                        });
+                      }
+                    },
+                    child: Text(
+                      '${tempEnd.toLocal()}'.split(' ')[0],
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () =>
+                      Navigator.pop(dialogContext), // Cancel dialog
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    // Compare only the date parts (ignoring time)
+                    if (tempStart.year == tempEnd.year &&
+                        tempStart.month == tempEnd.month &&
+                        tempStart.day == tempEnd.day) {
+                      ScaffoldMessenger.of(parentContext).showSnackBar(
+                        snackBarFailed(
+                          'Start and end dates cannot be the same.',
+                          parentContext,
+                        ),
+                      );
+                    } else if (tempStart.isAfter(tempEnd)) {
+                      ScaffoldMessenger.of(parentContext).showSnackBar(
+                        snackBarFailed(
+                          'Start date cannot be later than end date.',
+                          parentContext,
+                        ),
+                      );
+                    } else {
+                      Navigator.pop(dialogContext,
+                          DateTimeRange(start: tempStart, end: tempEnd));
+                    }
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
 
     if (pickedRange != null) {
+      // Update the global selectedDateRange and UI
       setState(() {
         selectedDateRange = pickedRange;
       });
@@ -330,7 +616,10 @@ class _ReportPage extends State<ReportPage> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                          onPressed: pickDateRange,
+                          onPressed: () {
+                            pickCustomDateRange(
+                                context); // Call the full-screen date range picker
+                          },
                           child: const Text(
                             'SELECT RANGE',
                             style: TextStyle(
@@ -527,10 +816,11 @@ class _ReportPage extends State<ReportPage> {
                         child: Table(
                           border: TableBorder.all(color: Colors.grey, width: 1),
                           columnWidths: const {
-                            0: FlexColumnWidth(2),
-                            1: FlexColumnWidth(3),
-                            2: FlexColumnWidth(3),
-                            3: FlexColumnWidth(2),
+                            0: FlexColumnWidth(3),
+                            1: FlexColumnWidth(2),
+                            2: FlexColumnWidth(2),
+                            3: FlexColumnWidth(3),
+                            4: FlexColumnWidth(1),
                           },
                           children: [
                             TableRow(
@@ -582,6 +872,17 @@ class _ReportPage extends State<ReportPage> {
                                     textAlign: TextAlign.center,
                                   ),
                                 ),
+                                Padding(
+                                  padding: EdgeInsets.all(8.0),
+                                  child: Text(
+                                    'Edit',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
                               ],
                             ),
                             ...attendanceData.map((employee) {
@@ -613,6 +914,20 @@ class _ReportPage extends State<ReportPage> {
                                     child: Text(
                                       employee['totalHours'] ?? '',
                                       textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: IconButton(
+                                      icon: const Icon(Icons.edit,
+                                          color: Colors.blueAccent),
+                                      onPressed: () => _showEditAttendanceModal(
+                                        employee['id'] ?? '',
+                                        employee['yearMonth'] ?? '',
+                                        employee['day'] ?? '',
+                                        employee,
+                                      ),
+                                      tooltip: 'Edit Time In & Time Out',
                                     ),
                                   ),
                                 ],
