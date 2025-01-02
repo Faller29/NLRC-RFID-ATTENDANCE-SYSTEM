@@ -6,6 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:nlrc_rfid_scanner/assets/themeData.dart';
+import 'package:nlrc_rfid_scanner/backend/data/fetch_users.dart';
+import 'package:nlrc_rfid_scanner/backend/data/file_reader.dart';
+import 'package:nlrc_rfid_scanner/main.dart';
 import 'package:shimmer_animation/shimmer_animation.dart';
 
 class ScannedModal extends StatefulWidget {
@@ -30,10 +33,33 @@ class _ScannedModalState extends State<ScannedModal> {
   String? _selectedJobType;
   final List<String> _jobTypes = ['Office', 'OB'];
 
+  bool _isTimeInRecorded = false; // Flag to check if Time In is recorded
+  DateTime? _timeIn;
+
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
   @override
   Widget build(BuildContext context) {
+    // Check for matching RFID in attendance list
+    final matchedAttendance = attendance.firstWhere(
+        (entry) => entry['name'] == widget.userData['name'],
+        orElse: () => {});
+    print(widget.userData['name']);
+
+    String? timeIn = matchedAttendance['timeIn'];
+    String? timeOut = matchedAttendance['timeOut'];
+
+    if (timeIn != null && timeIn.isNotEmpty) {
+      // Display the timeIn if it exists and disable the dropdown button
+      _selectedJobType = null; // Optionally disable job type selection
+    } else {
+      timeIn = '--:-- --';
+      timeOut = '--:-- --';
+    }
+    if (timeOut != null || timeIn.isEmpty) {
+      timeOut = '--:-- --';
+    }
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Center(
@@ -198,7 +224,8 @@ class _ScannedModalState extends State<ScannedModal> {
                                         ),
                                         const SizedBox(width: 8),
                                         Text(
-                                          _formatTimestamp(widget.timestamp),
+                                          /* _formatTimestamp(timeIn) */ timeIn
+                                              .toString(),
                                           style: const TextStyle(
                                               fontWeight: FontWeight.bold,
                                               fontSize: 16,
@@ -246,7 +273,7 @@ class _ScannedModalState extends State<ScannedModal> {
                                         ),
                                         const SizedBox(width: 8),
                                         Text(
-                                          _formatTimestamp(widget.timestamp),
+                                          timeOut.toString(),
                                           style: const TextStyle(
                                               fontWeight: FontWeight.bold,
                                               fontSize: 16,
@@ -261,52 +288,53 @@ class _ScannedModalState extends State<ScannedModal> {
                           )
                         ],
                       ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Field type:',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            SizedBox(
-                              width: 20,
-                            ),
-                            DropdownButton<String>(
-                              value: _selectedJobType,
-                              focusColor: Colors.transparent,
-                              icon: Icon(
-                                Icons.arrow_drop_down,
-                                color: Colors.black,
+                      if (timeIn == null)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Field type:',
+                                style: TextStyle(fontWeight: FontWeight.bold),
                               ),
-                              underline: Container(),
-                              items: _jobTypes.map((String type) {
-                                return DropdownMenuItem<String>(
-                                  value: type,
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 12.0, horizontal: 16.0),
-                                    child: Text(type),
-                                  ),
-                                );
-                              }).toList(),
-                              onChanged: (String? newValue) {
-                                setState(() {
-                                  _selectedJobType = newValue;
-                                });
-                              },
-                              hint: const Text(
-                                'Select job type',
-                                style: TextStyle(
-                                    color: Color.fromARGB(255, 116, 1, 1),
-                                    fontWeight: FontWeight.bold),
+                              SizedBox(
+                                width: 20,
                               ),
-                            ),
-                          ],
+                              DropdownButton<String>(
+                                value: _selectedJobType,
+                                focusColor: Colors.transparent,
+                                icon: Icon(
+                                  Icons.arrow_drop_down,
+                                  color: Colors.black,
+                                ),
+                                underline: Container(),
+                                items: _jobTypes.map((String type) {
+                                  return DropdownMenuItem<String>(
+                                    value: type,
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 12.0, horizontal: 16.0),
+                                      child: Text(type),
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (String? newValue) {
+                                  setState(() {
+                                    _selectedJobType = newValue;
+                                  });
+                                },
+                                hint: const Text(
+                                  'Select job type',
+                                  style: TextStyle(
+                                      color: Color.fromARGB(255, 116, 1, 1),
+                                      fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
                       const SizedBox(height: 10),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -353,42 +381,6 @@ class _ScannedModalState extends State<ScannedModal> {
     );
   }
 
-  /* void _saveAttendance() async {
-    try {
-      final userId = widget.rfidData; // Assuming RFID is unique to the user
-      final today = widget.timestamp; // Use the timestamp passed to the modal
-      final monthYear =
-          DateFormat('MMM_yyyy').format(today); // Get current month and year
-      final day = DateFormat('dd').format(today); // Get the day
-      final attendanceRef = firestore
-          .collection('attendances')
-          .doc(monthYear) // Collection for the current month/year
-          .collection(day) // Subcollection for the current day
-          .doc(userId); // Document for the specific user (RFID)
-
-      final attendanceDoc = await attendanceRef.get();
-
-      if (!attendanceDoc.exists) {
-        // First scan, save as Time In
-        await attendanceRef.set({
-          'name': widget.userData['name'],
-          'officeType': widget.userData['office'],
-          'timeIn': widget.timestamp, // Use the timestamp passed to the modal
-          'timeOut': null,
-        });
-        debugPrint('Time In saved for $monthYear $day');
-      } else {
-        // If Time In exists, update Time Out
-        await attendanceRef.update({
-          'timeOut': widget.timestamp, // Use the timestamp passed to the modal
-        });
-        debugPrint('Time Out saved for $monthYear $day');
-      }
-    } catch (e) {
-      debugPrint('Error saving attendance: $e');
-    }
-  } */
-
   Future<ScaffoldFeatureController<SnackBar, SnackBarClosedReason>>
       _saveAttendance() async {
     try {
@@ -411,7 +403,7 @@ class _ScannedModalState extends State<ScannedModal> {
         // First scan, save as Time In
         await attendanceRef.set({
           'name': widget.userData['name'],
-          'officeType': widget.userData['office'],
+          'officeType': _selectedJobType, //widget.userData['office'],
           'timeIn': widget.timestamp, // Use the timestamp passed to the modal
           'timeOut': null,
         });
@@ -485,6 +477,9 @@ class _ScannedModalState extends State<ScannedModal> {
             });
           }
 
+          await fetchAttendance();
+          await loadAttendance();
+
           Navigator.of(context).pop();
         }
       }
@@ -505,37 +500,3 @@ class _ScannedModalState extends State<ScannedModal> {
     return formatter.format(timestamp);
   }
 }
-
-
-
-
-
-
-
-
-
-/* import 'package:flutter/material.dart';
-import 'package:nlrc_rfid_scanner/assets/themeData.dart';
-
-scannedModal(BuildContext context) {
-  showModalBottomSheet(
-      context: context,
-      builder: (BuildContext context) {
-        return Center(
-          child: Card(
-            margin: EdgeInsets.all(8.0),
-            child: Center(
-                child: Column(
-              children: [
-                Text("data"),
-                ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    child: Text("data"))
-              ],
-            )),
-          ),
-        );
-      });
-}*/

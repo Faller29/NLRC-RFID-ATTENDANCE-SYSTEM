@@ -1,6 +1,6 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:nlrc_rfid_scanner/main.dart';
 import 'package:nlrc_rfid_scanner/screens/admin_page.dart';
 
 class CustomDrawer extends StatefulWidget {
@@ -9,7 +9,6 @@ class CustomDrawer extends StatefulWidget {
 }
 
 class _CustomDrawerState extends State<CustomDrawer> {
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
   List<Map<String, dynamic>> usersLoggedInToday = [];
 
   @override
@@ -18,51 +17,40 @@ class _CustomDrawerState extends State<CustomDrawer> {
     _fetchUsersLoggedInToday();
   }
 
-  // Fetch the users who logged in today
+  // Use local data to get users logged in today
   void _fetchUsersLoggedInToday() async {
-    final today = DateTime.now();
-    final monthYear = DateFormat('MMM_yyyy').format(today);
-    final day = DateFormat('dd').format(today);
-
     try {
-      final attendanceCollection = await firestore
-          .collection('attendances')
-          .doc(monthYear)
-          .collection(day)
-          .get();
+      final loggedInUsers = attendance.map((user) {
+        final timeIn = user['timeIn'] ?? '-';
+        final timeOut = user['timeOut'] ?? '-';
 
-      final users = attendanceCollection.docs;
-      final List<Map<String, dynamic>> loggedInUsers = [];
-
-      for (var doc in users) {
-        final userId = doc.id;
-        final data = doc.data();
-        final timeIn = data['timeIn'] ?? '-';
-        final timeOut = data['timeOut'] ?? '-';
-
-        // Add each user to the list
-        loggedInUsers.add({
-          'name': data['name'] ?? 'Unknown',
-          'timeIn':
-              timeIn is Timestamp ? _formatTimestamp(timeIn.toDate()) : timeIn,
-          'timeOut': timeOut is Timestamp
-              ? _formatTimestamp(timeOut.toDate())
-              : timeOut,
-        });
-      }
+        // Format the timeIn and timeOut (if needed)
+        return {
+          'name': user['name'] ?? 'Unknown',
+          'timeIn': _formatTimestamp(timeIn),
+          'timeOut': _formatTimestamp(timeOut),
+          'officeType': user['officeType'] ?? 'Unknown',
+        };
+      }).toList();
 
       setState(() {
         usersLoggedInToday = loggedInUsers;
       });
     } catch (e) {
-      debugPrint('Error fetching users: $e');
+      debugPrint('Error processing users: $e');
     }
   }
 
-  // Helper function to format the timestamp to a readable string
-  String _formatTimestamp(DateTime timestamp) {
-    final DateFormat formatter = DateFormat('hh:mm a');
-    return formatter.format(timestamp);
+  // Helper function to format the time (if needed)
+  String _formatTimestamp(String timestamp) {
+    // If you need to convert time from string to a readable format
+    try {
+      final parsedTime = DateFormat('HH:mm:ss').parse(timestamp);
+      final formattedTime = DateFormat('hh:mm a').format(parsedTime);
+      return formattedTime;
+    } catch (e) {
+      return timestamp;
+    }
   }
 
   @override
@@ -102,7 +90,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         final user = usersLoggedInToday[index];
                         return ListTile(
                           title: Text(
-                            user['name'],
+                            '${user['name']} | ${user['officeType']}',
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                           subtitle: Text(
@@ -121,7 +109,6 @@ class _CustomDrawerState extends State<CustomDrawer> {
           ),
           ListTile(
             contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-            //leading: Icon(Icons.admin_panel_settings),
             title: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -129,9 +116,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                   Icons.admin_panel_settings,
                   color: Color.fromARGB(255, 60, 45, 194),
                 ),
-                SizedBox(
-                  width: 10,
-                ),
+                SizedBox(width: 10),
                 Text(
                   'Admin Login',
                   style: TextStyle(
@@ -152,7 +137,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
     );
   }
 
-  // Navigation function for the Admin Login page (implement as needed)
+  // Navigation function for the Admin Login page
   void _navigateToAdminLogin(BuildContext context) {
     Navigator.push(
       context,

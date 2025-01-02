@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:nlrc_rfid_scanner/backend/data/fetch.dart';
+import 'package:nlrc_rfid_scanner/backend/data/fetch_users.dart';
 import 'package:nlrc_rfid_scanner/screens/admin__pages/dashboard_page.dart';
 import 'package:nlrc_rfid_scanner/screens/admin__pages/manage_user_page.dart';
 import 'package:nlrc_rfid_scanner/screens/admin__pages/report_page.dart';

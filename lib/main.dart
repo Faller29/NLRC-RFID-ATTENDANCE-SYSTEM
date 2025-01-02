@@ -1,17 +1,20 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:nlrc_rfid_scanner/backend/data/file_reader.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:nlrc_rfid_scanner/backend/data/fetch.dart';
+import 'package:nlrc_rfid_scanner/backend/data/fetch_users.dart';
 import 'package:nlrc_rfid_scanner/screens/homepage.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
 List<Map<String, dynamic>> localUsers = []; // Use dynamic for flexibility
 List<Map<String, dynamic>> users = [];
+List<Map<String, dynamic>> attendance = [];
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -21,37 +24,12 @@ Future<void> main() async {
   );
   //await fetchUsers();
   await fetchDataAndGenerateDartFile();
-
+  await fetchAttendance();
   // Use the path where your file is stored
   users = await loadUsers();
-
+  attendance = await loadAttendance();
+  print(attendance);
   runApp(const MyApp());
-}
-
-// Define the readFileContent function to read a file as a string
-Future<String> readFileContent(String path) async {
-  final directory = await getApplicationDocumentsDirectory();
-  final file = File('${directory.path}/users.json');
-
-  // Check if the file exists
-  if (await file.exists()) {
-    return await file.readAsString();
-  } else {
-    throw Exception('File does not exist');
-  }
-}
-
-// Define the function to load and parse users from the Dart file
-Future<List<Map<String, dynamic>>> loadUsers() async {
-  final directory = await getApplicationDocumentsDirectory();
-  final file = File('${directory.path}/users.json');
-  final fileContent = await readFileContent(file.toString());
-
-  // You would typically have a JSON string here, so let's decode it
-  List<dynamic> jsonData = jsonDecode(fileContent);
-
-  // Convert the JSON data into a list of Maps
-  return jsonData.map((item) => Map<String, dynamic>.from(item)).toList();
 }
 
 /* Future<void> fetchUsers() async {

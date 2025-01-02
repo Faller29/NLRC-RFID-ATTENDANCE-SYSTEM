@@ -5,7 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
 import 'package:iconly/iconly.dart';
 import 'package:nlrc_rfid_scanner/assets/themeData.dart';
-import 'package:nlrc_rfid_scanner/backend/data/fetch.dart';
+import 'package:nlrc_rfid_scanner/backend/data/fetch_users.dart';
 import 'package:shimmer_animation/shimmer_animation.dart';
 //import 'package:nlrc_rfid_scanner/backend/data/users.dart';
 import 'dart:io';
