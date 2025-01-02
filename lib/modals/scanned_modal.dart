@@ -56,7 +56,7 @@ class _ScannedModalState extends State<ScannedModal> {
       timeIn = '--:-- --';
       timeOut = '--:-- --';
     }
-    if (timeOut != null || timeIn.isEmpty) {
+    if (timeOut == null || timeIn.isEmpty) {
       timeOut = '--:-- --';
     }
 
@@ -288,7 +288,8 @@ class _ScannedModalState extends State<ScannedModal> {
                           )
                         ],
                       ),
-                      if (timeIn == null)
+                      if (matchedAttendance == null ||
+                          matchedAttendance.isEmpty)
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 20),
                           child: Row(
@@ -349,7 +350,7 @@ class _ScannedModalState extends State<ScannedModal> {
                             style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.greenAccent),
                             onPressed: () async {
-                              if (_selectedJobType == null) {
+                              if (_selectedJobType == null && timeIn == null) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   snackBarFailed(
                                       'Please select Job Field', context),
@@ -407,6 +408,9 @@ class _ScannedModalState extends State<ScannedModal> {
           'timeIn': widget.timestamp, // Use the timestamp passed to the modal
           'timeOut': null,
         });
+
+        await fetchAttendance();
+        attendance = await loadAttendance();
         Navigator.of(context).pop();
       } else {
         // If Time In exists, check Time Out before updating
@@ -417,6 +421,7 @@ class _ScannedModalState extends State<ScannedModal> {
         // Check if Time Out already exists
         if (timeOut != null) {
           // Show a Snackbar and prevent overwriting
+
           Navigator.of(context).pop();
 
           return ScaffoldMessenger.of(context).showSnackBar(
@@ -437,6 +442,7 @@ class _ScannedModalState extends State<ScannedModal> {
           // Check if workedDuration is greater than 30 minutes
           if (workedDuration.inMinutes < 30) {
             // Show a Snackbar if the difference is less than 30 minutes
+
             Navigator.of(context).pop();
 
             return ScaffoldMessenger.of(context).showSnackBar(
@@ -476,10 +482,8 @@ class _ScannedModalState extends State<ScannedModal> {
               'totalHours': workedHours,
             });
           }
-
           await fetchAttendance();
-          await loadAttendance();
-
+          attendance = await loadAttendance();
           Navigator.of(context).pop();
         }
       }

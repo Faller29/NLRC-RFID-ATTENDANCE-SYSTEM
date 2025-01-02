@@ -17,6 +17,10 @@ class _CustomDrawerState extends State<CustomDrawer> {
     _fetchUsersLoggedInToday();
   }
 
+  void dispose() {
+    super.dispose();
+  }
+
   // Use local data to get users logged in today
   void _fetchUsersLoggedInToday() async {
     try {
