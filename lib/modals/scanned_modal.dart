@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -124,12 +126,25 @@ class _ScannedModalState extends State<ScannedModal> {
                                   color: Colors.blueAccent.withOpacity(0.2)),
                               child: Padding(
                                 padding: const EdgeInsets.all(5.0),
-                                child: Image.asset(
-                                  'lib/assets/images/profile/male.png',
-                                  fit: BoxFit.cover,
-                                  height: 150,
-                                  width: 150,
-                                ),
+                                child: widget.userData['imagePath'] != null &&
+                                        File(widget.userData['imagePath']!)
+                                            .existsSync()
+                                    ? Image.file(
+                                        File(widget.userData['imagePath']!),
+                                        width: 150,
+                                        height: 150,
+                                        fit: BoxFit.fill,
+                                      )
+                                    : Container(
+                                        width: 150,
+                                        height: 150,
+                                        child: Image.asset(
+                                          'lib/assets/images/NLRC-WHITE.png', // Default image asset
+                                          width: 150,
+                                          height: 150,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
                               ),
                             ),
                           ),
@@ -175,7 +190,7 @@ class _ScannedModalState extends State<ScannedModal> {
                                           height: 15,
                                         ),
                                         const Text(
-                                          'Time out:',
+                                          'Time in:',
                                           style: TextStyle(
                                               fontWeight: FontWeight.bold,
                                               fontSize: 16,
@@ -222,7 +237,7 @@ class _ScannedModalState extends State<ScannedModal> {
                                           height: 15,
                                         ),
                                         const Text(
-                                          'Time in:',
+                                          'Time out:',
                                           style: TextStyle(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 16,

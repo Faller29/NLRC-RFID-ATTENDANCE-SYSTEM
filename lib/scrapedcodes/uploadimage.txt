@@ -1,0 +1,82 @@
+/* 
+  // Image Picker Widget
+  Widget _buildImagePicker() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Profile Picture:',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        SizedBox(height: 10),
+        Card(
+          shape: CircleBorder(),
+          color: Colors.black45,
+          child: Stack(
+            children: [
+              _currentImagePath != null && File(_currentImagePath!).existsSync()
+                  ? Image.file(
+                      File(_currentImagePath!),
+                      width: 150,
+                      height: 150,
+                      fit: BoxFit.fill,
+                    )
+                  : Container(
+                      width: 150,
+                      height: 150,
+                      /* decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey),
+                            borderRadius: BorderRadius.circular(8),
+                          ), */
+                      child: Image.asset(
+                        'lib/assets/images/NLRC-WHITE.png', // Default image asset
+                        width: 150,
+                        height: 150,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+            ],
+          ),
+        ),
+        SizedBox(
+          height: 10,
+        ),
+        ElevatedButton(
+            style:
+                ElevatedButton.styleFrom(backgroundColor: Colors.greenAccent),
+            onPressed: () async {
+              await _pickImage();
+            },
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(
+                  IconlyBold.upload,
+                  color: Colors.white,
+                ),
+                Text(
+                  'Upload Image',
+                  style: TextStyle(color: Colors.white),
+                )
+              ],
+            ))
+      ],
+    );
+  }
+
+// Pick Image using ImagePicker
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      final directory = await getApplicationDocumentsDirectory();
+      final filePath = '${directory.path}/${pickedFile.name}';
+      final savedImage = await File(pickedFile.path).copy(filePath);
+
+      setState(() {
+        _selectedImage = savedImage;
+      });
+    }
+  } */

@@ -5,12 +5,14 @@ import 'package:path_provider/path_provider.dart';
 
 // Define your User class with the correct fields
 class User {
+  final String imagePath;
   final String rfid;
   final String name;
   final String position;
   final String office;
 
   User({
+    required this.imagePath,
     required this.rfid,
     required this.name,
     required this.position,
@@ -20,6 +22,7 @@ class User {
   // Factory method to create a User from a map (like the one retrieved from Firestore)
   factory User.fromMap(Map<String, dynamic> map) {
     return User(
+      imagePath: map['imagePath'] ?? '',
       rfid: map['rfid'] ?? '',
       name: map['name'] ?? '',
       position: map['position'] ?? '',
@@ -30,6 +33,7 @@ class User {
   // Convert User object to map (useful if you need to save or send data)
   Map<String, dynamic> toMap() {
     return {
+      'imagePath': imagePath,
       'rfid': rfid,
       'name': name,
       'position': position,

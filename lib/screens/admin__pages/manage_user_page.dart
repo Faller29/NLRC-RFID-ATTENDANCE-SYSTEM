@@ -3,10 +3,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
+import 'package:iconly/iconly.dart';
 import 'package:nlrc_rfid_scanner/assets/themeData.dart';
 import 'package:nlrc_rfid_scanner/backend/data/fetch.dart';
 import 'package:shimmer_animation/shimmer_animation.dart';
 //import 'package:nlrc_rfid_scanner/backend/data/users.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 
 class ManageUserPage extends StatefulWidget {
   @override
@@ -25,6 +29,9 @@ class _ManageUserPageState extends State<ManageUserPage> {
   String _rfidData = '';
   Timer? _expirationTimer;
   final FocusNode _focusNode = FocusNode();
+  File? _selectedImage;
+  String? _currentImagePath; // Holds the path to the current image for editing
+  bool pickedImage = false;
 
   @override
   void initState() {
@@ -38,7 +45,6 @@ class _ManageUserPageState extends State<ManageUserPage> {
   }
 
   void _onKey(KeyEvent event) async {
-    print('rubn');
     if (event is KeyDownEvent) {
       // Skip handling modifier keys (like Alt, Ctrl, Shift) or empty key labels
       if (event.logicalKey.keyLabel.isEmpty) return;
@@ -268,7 +274,11 @@ class _ManageUserPageState extends State<ManageUserPage> {
                     child: Padding(
                       padding: const EdgeInsets.all(10.0),
                       child: ElevatedButton.icon(
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () {
+                          _clearFormFields();
+
+                          Navigator.pop(context);
+                        },
                         icon: Icon(Icons.cancel, color: Colors.white),
                         label: Text(
                           'Cancel',
@@ -298,16 +308,16 @@ class _ManageUserPageState extends State<ManageUserPage> {
   }
 
   // Show Edit User Modal
-  void _showEditUserModal(String userId, Map<String, dynamic> user) {
+  _showEditUserModal(String userId, Map<String, dynamic> user) {
     _userIdToEdit = userId;
     _rfidController.text = user['rfid'];
     _nameController.text = user['name'];
     _positionController.text = user['position'];
     _officeController.text = user['office'];
-
+    _currentImagePath = user['imagePath'];
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (BuildContext context) {
         return _buildUserFormDialog('Edit User', _updateUser);
       },
     );
@@ -315,59 +325,146 @@ class _ManageUserPageState extends State<ManageUserPage> {
 
   // User Form Dialog
   Widget _buildUserFormDialog(String title, VoidCallback onSave) {
-    return Dialog(
-      insetPadding: EdgeInsets.symmetric(horizontal: 400),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16.0),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: 10),
-            _buildTextField('RFID Number', _rfidController),
-            _buildTextField('Name', _nameController),
-            _buildTextField('Position', _positionController),
-            _buildTextField('Office', _officeController),
-            SizedBox(height: 20),
-            Center(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ElevatedButton.icon(
-                    icon: Icon(Icons.close),
-                    label: Text('Close'),
-                    onPressed: () => Navigator.pop(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueAccent,
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(horizontal: 20),
-                    ),
+    return StatefulBuilder(
+      builder: (BuildContext context, void Function(void Function()) setState) {
+        return Dialog(
+          insetPadding: EdgeInsets.symmetric(horizontal: 400),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16.0),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
                   ),
-                  ElevatedButton.icon(
-                    icon: Icon(Icons.save),
-                    label: Text('Save'),
-                    onPressed: onSave,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(horizontal: 20),
-                    ),
+                ),
+                SizedBox(height: 10),
+                /* Text(
+                  'Profile Picture:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ), */
+                SizedBox(height: 10),
+                Card(
+                  shape: CircleBorder(),
+                  color: Colors.black45,
+                  child: Padding(
+                    padding: const EdgeInsets.all(2.0),
+                    child: _selectedImage != null
+                        ? Image.file(
+                            _selectedImage!, // Show the selected image
+                            width: 150,
+                            height: 150,
+                            fit: BoxFit.cover,
+                            key: ValueKey<File>(_selectedImage!),
+                          )
+                        : _currentImagePath != null &&
+                                File(_currentImagePath!).existsSync()
+                            ? Image.file(
+                                File(_currentImagePath!),
+                                width: 150,
+                                height: 150,
+                                fit: BoxFit.fill,
+                              )
+                            : Container(
+                                width: 150,
+                                height: 150,
+                                child: Image.asset(
+                                  'lib/assets/images/NLRC-WHITE.png', // Default image asset
+                                  width: 150,
+                                  height: 150,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
                   ),
-                ],
-              ),
+                ),
+                SizedBox(
+                  height: 10,
+                ),
+                ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.greenAccent),
+                    onPressed: () async {
+                      final picker = ImagePicker();
+                      final pickedFile =
+                          await picker.pickImage(source: ImageSource.gallery);
+
+                      if (pickedFile != null) {
+                        final directory =
+                            await getApplicationDocumentsDirectory();
+                        final filePath = '${directory.path}/${pickedFile.name}';
+                        final savedImage =
+                            await File(pickedFile.path).copy(filePath);
+
+                        setState(() {
+                          _selectedImage = savedImage;
+                        });
+                      }
+                    },
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Icon(
+                          IconlyBold.upload,
+                          color: Colors.white,
+                        ),
+                        Text(
+                          'Upload Image',
+                          style: TextStyle(color: Colors.white),
+                        )
+                      ],
+                    )),
+                SizedBox(height: 20),
+
+                _buildTextField('RFID Number', _rfidController),
+                _buildTextField('Name', _nameController),
+                _buildTextField('Position', _positionController),
+                _buildTextField('Office', _officeController),
+                SizedBox(height: 20),
+
+                // Action Buttons
+                Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      ElevatedButton.icon(
+                        icon: Icon(Icons.close),
+                        label: Text('Close'),
+                        onPressed: () {
+                          _clearFormFields();
+
+                          Navigator.pop(context);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blueAccent,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(horizontal: 20),
+                        ),
+                      ),
+                      ElevatedButton.icon(
+                        icon: Icon(Icons.save),
+                        label: Text('Save'),
+                        onPressed: onSave,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(horizontal: 20),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -409,6 +506,7 @@ class _ManageUserPageState extends State<ManageUserPage> {
       );
       return;
     }
+    final imagePath = _selectedImage!.path;
 
     // Check if user with this RFID already exists
     _firestore.collection('users').doc(rfid).get().then((docSnapshot) {
@@ -418,6 +516,7 @@ class _ManageUserPageState extends State<ManageUserPage> {
           'name': name,
           'position': position,
           'office': office,
+          'imagePath': imagePath,
         }).then((_) {
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
@@ -439,6 +538,7 @@ class _ManageUserPageState extends State<ManageUserPage> {
           'name': name,
           'position': position,
           'office': office,
+          'imagePath': imagePath,
         }).then((_) {
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
@@ -463,8 +563,7 @@ class _ManageUserPageState extends State<ManageUserPage> {
     _clearFormFields();
   }
 
-  // Update User in Firestore and Refresh the list
-  void _updateUser() {
+  void _updateUser() async {
     final rfid = _rfidController.text.trim();
     final name = _nameController.text.trim();
     final position = _positionController.text.trim();
@@ -477,25 +576,46 @@ class _ManageUserPageState extends State<ManageUserPage> {
       return;
     }
 
-    _firestore.collection('users').doc(rfid).update({
-      'rfid': rfid,
-      'name': name,
-      'position': position,
-      'office': office,
-    }).then((_) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        snackBarSuccess('User updated successfully!', context),
-      );
-      setState(() {
-        // Refresh the list after updating a user
-        //fetchUsersFromFirebase(); // Ensure this fetches updated data
+    final docSnapshot = await _firestore.collection('users').doc(rfid).get();
+
+    if (docSnapshot.exists) {
+      final currentImagePath = docSnapshot.data()?['imagePath'];
+      final imagePath = _selectedImage?.path ?? currentImagePath;
+
+      if (_selectedImage != null &&
+          currentImagePath != null &&
+          currentImagePath != imagePath) {
+        // Delete old image if it exists
+        final oldImageFile = File(currentImagePath);
+        if (await oldImageFile.exists()) {
+          await oldImageFile.delete();
+        }
+      }
+      print(_selectedImage);
+      print(currentImagePath);
+
+      _firestore.collection('users').doc(rfid).update({
+        'name': name,
+        'position': position,
+        'office': office,
+        'imagePath': imagePath,
+      }).then((_) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          snackBarSuccess('User updated successfully!', context),
+        );
+      }).catchError((error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          snackBarFailed(error.toString(), context),
+        );
       });
-    }).catchError((error) {
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        snackBarFailed('$error', context),
+        snackBarFailed('User not found!', context),
       );
-    });
+    }
+
+    _clearFormFields();
   }
 
 // Delete User from Firestore and Refresh the list
@@ -516,7 +636,9 @@ class _ManageUserPageState extends State<ManageUserPage> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.pop(context); // Close the dialog
+                _clearFormFields();
+
+                Navigator.pop(context);
               },
               child: Text(
                 'Cancel',
@@ -527,25 +649,26 @@ class _ManageUserPageState extends State<ManageUserPage> {
               ),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-              ),
-              onPressed: () {
-                Navigator.pop(context); // Close the dialog
-                // Proceed with deleting the user
-                _firestore.collection('users').doc(rfid).delete().then((_) {
+              style:
+                  ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+              onPressed: () async {
+                Navigator.pop(context);
+                final docSnapshot =
+                    await _firestore.collection('users').doc(rfid).get();
+                if (docSnapshot.exists) {
+                  final imagePath = docSnapshot.data()?['imagePath'];
+                  if (imagePath != null) {
+                    final imageFile = File(imagePath);
+                    if (await imageFile.exists()) {
+                      await imageFile.delete();
+                    }
+                  }
+                  await _firestore.collection('users').doc(rfid).delete();
                   ScaffoldMessenger.of(context).showSnackBar(
-                    snackBarFailed('User deleted successfully!', context),
+                    snackBarSuccess('User deleted successfully!', context),
                   );
-                  setState(() {
-                    // Refresh the list after deleting a user
-                    // fetchUsersFromFirebase(); // Ensure this fetches updated data
-                  });
-                }).catchError((error) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    snackBarFailed(error.toString(), context),
-                  );
-                });
+                  setState(() {});
+                }
               },
               child: Text(
                 'Delete',
@@ -576,5 +699,7 @@ class _ManageUserPageState extends State<ManageUserPage> {
     _positionController.clear();
     _officeController.clear();
     _userIdToEdit = null;
+    _selectedImage = null;
+    _currentImagePath = null;
   }
 }
