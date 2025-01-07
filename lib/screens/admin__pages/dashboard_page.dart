@@ -1,41 +1,29 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:iconly/iconly.dart';
 import 'package:intl/intl.dart';
+import 'package:nlrc_rfid_scanner/backend/data/fetch_attendance.dart';
 
 class DashboardPage extends StatefulWidget {
+  const DashboardPage({super.key});
+
   @override
   _DashboardPageState createState() => _DashboardPageState();
 }
 
 class _DashboardPageState extends State<DashboardPage> {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
-  List<Map<String, dynamic>> users = [];
-  Map<String, double> workHours = {};
-  Map<String, double> weeklyWorkHours = {}; // For weekly aggregation
-  Map<String, double> monthlyWorkHours = {}; // For monthly aggregation
-  Map<String, double> yearlyWorkHours = {};
-
-  int loggedUsersCount = 0;
   String nlrc = "National Labor Relations Commission";
-  PageController _pageController = PageController();
   String selectedTimeRange = "Today"; // Default value
-  bool isLoading = true;
   String selectedSorting = "Alphabetical"; // Default sorting option
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    /* WidgetsBinding.instance.addPostFrameCallback((_) {
       _fetchDatas();
-    });
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
+    }); */
   }
 
   String getFormattedDate() {
@@ -46,290 +34,15 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> _fetchDatas() async {
+    setState(() {
+      isLoading = true;
+    });
     await fetchUsers();
     await fetchLoggedUsers();
-  }
-
-  // Fetch user data from Firebase
-  Future<void> fetchUsers() async {
-    try {
-      final usersRef = firestore.collection('users');
-      final snapshot = await usersRef.get();
-      final fetchedUsers = snapshot.docs.map((doc) {
-        return {
-          'rfid': doc['rfid'],
-          'name': doc['name'],
-          'office': doc['office'],
-          'position': doc['position'],
-        };
-      }).toList();
-
-      setState(() {
-        users = fetchedUsers;
-      });
-
-      // Fetch attendance data for each user
-      await fetchAttendanceData();
-    } catch (e) {
-      debugPrint('Error fetching users: $e');
-    }
-  }
-
-  // Fetch logged users count for today
-  Future<void> fetchLoggedUsers() async {
-    try {
-      final today = DateTime.now();
-      final monthYear = DateFormat('MMM_yyyy').format(today);
-      final day = DateFormat('dd').format(today);
-
-      final attendanceRef =
-          firestore.collection('attendances').doc(monthYear).collection(day);
-
-      final snapshot = await attendanceRef.get();
-
-      // Count how many users have logged in today (those who have a timeIn)
-      int count = 0;
-      for (var doc in snapshot.docs) {
-        final data = doc.data();
-        final timeIn = (data['timeIn'] as Timestamp?)?.toDate();
-        if (timeIn != null) {
-          count++;
-        }
-      }
-
-      setState(() {
-        loggedUsersCount = count;
-      });
-    } catch (e) {
-      debugPrint('Error fetching logged users: $e');
-    }
-  }
-
-  // Fetch attendance data for each user and calculate hours worked
-  Future<void> fetchAttendanceData() async {
-    try {
-      final today = DateTime.now();
-      final monthYear = DateFormat('MMM_yyyy').format(today);
-      final day = DateFormat('dd').format(today);
-
-      for (var user in users) {
-        final userId = user['rfid'];
-        final attendanceRef = firestore
-            .collection('attendances')
-            .doc(monthYear)
-            .collection(day)
-            .doc(userId);
-
-        final attendanceDoc = await attendanceRef.get();
-        if (attendanceDoc.exists) {
-          final data = attendanceDoc.data();
-          final timeIn = (data?['timeIn'] as Timestamp?)?.toDate();
-          final timeOut = (data?['timeOut'] as Timestamp?)?.toDate();
-
-          if (timeIn != null && timeOut != null) {
-            final workedDuration = timeOut.difference(timeIn);
-            final workedHours = workedDuration.inHours +
-                (workedDuration.inMinutes.remainder(60) / 60);
-            setState(() {
-              workHours[userId] = workedHours;
-            });
-          }
-        }
-      }
-      await _fetchWeeklyAttendanceData();
-      await _fetchMonthlyAttendanceData();
-      await fetchYearlyAttendanceData();
-    } catch (e) {
-      debugPrint('Error fetching attendance data: $e');
-    }
-  }
-
-  // Fetch attendance data for the week
-  Future<void> _fetchWeeklyAttendanceData() async {
-    try {
-      final today = DateTime.now();
-      final weekStart = today.subtract(
-          Duration(days: today.weekday - 1)); // Start of the week (Monday)
-
-      for (var user in users) {
-        final userId = user['rfid'];
-        double totalWeeklyHours = 0;
-
-        // Iterate over the last 7 days
-        for (int i = 0; i < 7; i++) {
-          final day = weekStart.add(Duration(days: i));
-          final monthYear = DateFormat('MMM_yyyy').format(day);
-          final dayString = DateFormat('dd').format(day);
-
-          final attendanceRef = firestore
-              .collection('attendances')
-              .doc(monthYear)
-              .collection(dayString)
-              .doc(userId);
-
-          final attendanceDoc = await attendanceRef.get();
-          if (attendanceDoc.exists) {
-            final data = attendanceDoc.data();
-            final timeIn = (data?['timeIn'] as Timestamp?)?.toDate();
-            final timeOut = (data?['timeOut'] as Timestamp?)?.toDate();
-
-            if (timeIn != null && timeOut != null) {
-              final workedDuration = timeOut.difference(timeIn);
-              final workedHours = workedDuration.inHours +
-                  (workedDuration.inMinutes.remainder(60) / 60);
-              totalWeeklyHours += workedHours;
-            }
-          }
-        }
-
-        setState(() {
-          weeklyWorkHours[userId] = totalWeeklyHours;
-        });
-      }
-    } catch (e) {
-      debugPrint('Error fetching weekly attendance data: $e');
-    }
-  }
-
-  // Fetch attendance data for the month
-  Future<void> _fetchMonthlyAttendanceData() async {
-    try {
-      final today = DateTime.now();
-      final monthYear =
-          DateFormat('MMM_yyyy').format(today); // Get current month and year
-
-      for (var user in users) {
-        final userId = user['rfid'];
-        double totalMonthlyHours = 0;
-
-        final totalHoursRef = firestore
-            .collection('attendances')
-            .doc(monthYear)
-            .collection('total_hours')
-            .doc(userId);
-
-        final totalHoursDoc = await totalHoursRef.get();
-
-        if (totalHoursDoc.exists) {
-          final data = totalHoursDoc.data();
-          totalMonthlyHours = data?['totalHours'] ?? 0.0;
-        }
-
-        setState(() {
-          monthlyWorkHours[userId] = totalMonthlyHours;
-        });
-      }
-    } catch (e) {
-      debugPrint('Error fetching monthly attendance data: $e');
-    }
-  }
-
-  /* Future<void> fetchYearlyAttendanceData() async {
-    try {
-      final currentYear =
-          DateTime.now().year; // Dynamically determine the current year
-
-      for (var user in users) {
-        final userId = user['rfid'];
-        double totalYearlyHours = 0;
-
-        // Iterate over each month of the current year
-        for (int month = 1; month <= 12; month++) {
-          final monthDate = DateTime(currentYear, month, 1);
-          final monthYear =
-              DateFormat('MMM_yyyy').format(monthDate); // Example: Dec_2024
-          // Determine the total number of days in the month
-          final totalDaysInMonth = DateTime(currentYear, month + 1, 0).day;
-
-          for (int day = 1; day <= totalDaysInMonth; day++) {
-            final everyday = monthDate.add(Duration(days: day));
-
-            // Reference the specific day within the month's collection
-            final days = DateFormat('dd').format(everyday);
-            final dayRef = firestore
-                .collection('attendances')
-                .doc(monthYear)
-                .collection(days)
-                .doc(userId);
-
-            final attendanceDoc = await dayRef.get();
-            if (attendanceDoc.exists) {
-              final data = attendanceDoc.data();
-              final timeIn = (data?['timeIn'] as Timestamp?)?.toDate();
-              final timeOut = (data?['timeOut'] as Timestamp?)?.toDate();
-
-              if (timeIn != null && timeOut != null) {
-                final workedDuration = timeOut.difference(timeIn);
-                final workedHours = workedDuration.inHours +
-                    (workedDuration.inMinutes.remainder(60) / 60);
-                totalYearlyHours += workedHours;
-              }
-            }
-          }
-        }
-        //print(yearlyWorkHours[userId]);
-        setState(() {
-          yearlyWorkHours[userId] = totalYearlyHours;
-        });
-      }
-
-      // Set loading state to false
-      setState(() {
-        isLoading = false;
-      });
-    } catch (e) {
-      debugPrint('Error fetching yearly attendance data: $e');
-    }
-  } */
-
-  Future<void> fetchYearlyAttendanceData() async {
-    try {
-      final currentYear =
-          DateTime.now().year; // Dynamically determine the current year
-
-      for (var user in users) {
-        final userId = user['rfid'];
-        double totalYearlyHours = 0;
-
-        // Iterate over each month of the current year
-        for (int month = 1; month <= 12; month++) {
-          final monthDate = DateTime(currentYear, month, 1);
-          final monthYear =
-              DateFormat('MMM_yyyy').format(monthDate); // Example: Dec_2024
-
-          // Reference the user's total hours document for the specific month
-          final totalHoursRef = firestore
-              .collection('attendances')
-              .doc(monthYear) // Collection for the current month/year
-              .collection('total_hours') // Separate collection for total hours
-              .doc(userId); // Document for the specific user (RFID)
-
-          final totalHoursDoc = await totalHoursRef.get();
-
-          if (totalHoursDoc.exists) {
-            final data = totalHoursDoc.data();
-            final totalHours = data?['totalHours'] ?? 0.0;
-
-            // Add the total monthly hours to the yearly total
-            totalYearlyHours += totalHours;
-          } else {
-            print('No total hours data for user $userId in $monthYear');
-          }
-        }
-
-        // Update yearlyWorkHours for the user
-        setState(() {
-          yearlyWorkHours[userId] = totalYearlyHours;
-        });
-      }
-
-      // Set loading state to false
-      setState(() {
-        isLoading = false;
-      });
-    } catch (e) {
-      debugPrint('Error fetching yearly attendance data: $e');
-    }
+    await fetchAttendanceData();
+    setState(() {
+      isLoading = false;
+    });
   }
 
   List<BarChartGroupData> _getSortedBarData(List<BarChartGroupData> barData) {
@@ -350,333 +63,390 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              const SizedBox(
-                width: 40,
-              ),
-              _buildStatCard(
-                "Logged Users",
-                "$loggedUsersCount",
-                Icons.people,
-                Colors.blue,
-              ),
-              _buildStatCard(
-                "Workers",
-                "${users.length}",
-                Icons.work,
-                Colors.green,
-              ),
-              Flexible(
-                fit: FlexFit.tight,
-                flex: 1,
-                child: Card(
-                  color: const Color.fromARGB(255, 60, 45, 194),
-                  child: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 8, horizontal: 20),
-                    child: SizedBox(
-                      height: 100,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                " ${getFormattedDate()}",
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.white,
-                                ),
-                                textAlign: TextAlign.start,
-                              ),
-                              const Text(
-                                "Dashboard",
-                                style: TextStyle(
-                                  fontSize: 42,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                  height: 0.8,
-                                ),
-                                textAlign: TextAlign.start,
-                              ),
-                              Text(
-                                " ${nlrc.toUpperCase()}",
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Image.asset(
-                            'lib/assets/images/NLRC.png',
-                            fit: BoxFit.scaleDown,
-                            width: 150,
-                            height: 150,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(
-                width: 40,
-              )
-            ],
-          ),
-        ),
-        Card(
-          margin: const EdgeInsets.symmetric(horizontal: 50),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Stack(
+    return Scaffold(
+      backgroundColor: const Color.fromARGB(255, 221, 221, 221),
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const Text(
-                      "Workers Hour Metrics",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        IconButton(
-                          onPressed: () {
-                            setState(() {
-                              if (selectedTimeRange == "Today") {
-                                selectedTimeRange = "This Year";
-                              } else if (selectedTimeRange == "This Week") {
-                                selectedTimeRange = "Today";
-                              } else if (selectedTimeRange == "This Month") {
-                                selectedTimeRange = "This Week";
-                              } else if (selectedTimeRange == "This Year") {
-                                selectedTimeRange = "This Month";
-                              } else {
-                                selectedTimeRange = "Today";
-                              }
-                            });
-                          },
-                          icon: Icon(IconlyBold.arrow_left_2),
-                        ),
-                        Text(
-                          selectedTimeRange,
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        IconButton(
-                          onPressed: () {
-                            setState(() {
-                              if (selectedTimeRange == "Today") {
-                                selectedTimeRange = "This Week";
-                              } else if (selectedTimeRange == "This Week") {
-                                selectedTimeRange = "This Month";
-                              } else if (selectedTimeRange == "This Month") {
-                                selectedTimeRange = "This Year";
-                              } else if (selectedTimeRange == "This Year") {
-                                selectedTimeRange = "Today";
-                              } else {
-                                selectedTimeRange = "Today";
-                              }
-                            });
-                          },
-                          icon: Icon(IconlyBold.arrow_right_2),
-                        ),
-                      ],
-                    ),
-                    SizedBox(
-                      height: 20,
-                    ),
-                    isLoading
-                        ? Column(
-                            children: [
-                              CircularProgressIndicator(),
-                              SizedBox(
-                                height: 20,
-                              ),
-                              Text(
-                                'Fetching Data from Database. Please wait',
-                                style: TextStyle(
-                                  color: Color(0xff68737d),
+                const SizedBox(
+                  width: 40,
+                ),
+                _buildStatCard(
+                  "Logged Users",
+                  "$loggedUsersCount",
+                  Icons.people,
+                  Colors.blue,
+                ),
+                _buildStatCard(
+                  "Workers",
+                  "${users.length}",
+                  Icons.work,
+                  Colors.green,
+                ),
+                Flexible(
+                  fit: FlexFit.tight,
+                  flex: 1,
+                  child: Card(
+                    color: const Color.fromARGB(255, 60, 45, 194),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 8, horizontal: 20),
+                      child: SizedBox(
+                        height: 100,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  " ${getFormattedDate()}",
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.white,
+                                  ),
+                                  textAlign: TextAlign.start,
                                 ),
-                              )
-                            ],
-                          )
-                        : Column(
-                            children: [
-                              AspectRatio(
-                                aspectRatio: 4,
-                                child: BarChart(
-                                  BarChartData(
-                                    alignment: BarChartAlignment.spaceAround,
-                                    barTouchData: BarTouchData(
-                                      touchTooltipData: BarTouchTooltipData(
-                                        getTooltipItem:
-                                            (group, groupIndex, rod, rodIndex) {
-                                          return BarTooltipItem(
-                                            '${_getWorkerName(group.x)}\n',
-                                            const TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                            children: [
-                                              TextSpan(
-                                                text:
-                                                    '${rod.toY.toString()} worked hours',
-                                                style: const TextStyle(
-                                                    color: Colors.white),
-                                              ),
-                                            ],
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                    titlesData: FlTitlesData(
-                                      leftTitles: AxisTitles(
-                                        sideTitles: SideTitles(
-                                          showTitles: true,
-                                          reservedSize: 50,
-                                        ),
-                                      ),
-                                      bottomTitles: AxisTitles(
-                                        sideTitles: SideTitles(
-                                          showTitles: true,
-                                          getTitlesWidget: _getBottomTitles,
-                                          reservedSize: 50,
-                                        ),
-                                      ),
-                                      topTitles: AxisTitles(
-                                          drawBelowEverything: false),
-                                      rightTitles: AxisTitles(
-                                          drawBelowEverything: false),
-                                    ),
-                                    borderData: FlBorderData(show: true),
-                                    gridData: FlGridData(show: true),
-                                    barGroups: _getSortedBarData(
-                                        selectedTimeRange == "Today"
-                                            ? _getTodayBarData()
-                                            : selectedTimeRange == "This Week"
-                                                ? _getWeeklyBarData()
-                                                : selectedTimeRange ==
-                                                        "This Month"
-                                                    ? _getMonthlyBarData()
-                                                    : selectedTimeRange ==
-                                                            "This Year"
-                                                        ? _getYearlyBarData()
-                                                        : _getYearlyBarData()),
+                                const Text(
+                                  "Dashboard",
+                                  style: TextStyle(
+                                    fontSize: 42,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    height: 0.8,
+                                  ),
+                                  textAlign: TextAlign.start,
+                                ),
+                                Text(
+                                  " ${nlrc.toUpperCase()}",
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                    SizedBox(
-                      height: 30,
-                    ),
-                  ],
-                ),
-                // Sorting dropdown
-                Positioned(
-                  right: 0,
-                  bottom: 0,
-                  child: Row(
-                    children: [
-                      Text(
-                        'Sort: ',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, color: Colors.black54),
-                      ),
-                      DropdownButton<String>(
-                        value: selectedSorting,
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            selectedSorting = newValue!;
-                          });
-                        },
-                        focusColor: Colors.transparent,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blueAccent,
-                        ),
-                        icon: Icon(
-                          Icons.arrow_drop_down,
-                          color: Colors.blueAccent,
-                        ),
-                        underline: Container(), // Removes the underline
-                        items: <String>['Alphabetical', 'Highest', 'Lowest']
-                            .map<DropdownMenuItem<String>>((String value) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 12.0, horizontal: 16.0),
-                              child: Text(value),
+                              ],
                             ),
-                          );
-                        }).toList(),
+                            Image.asset(
+                              'lib/assets/images/NLRC.png',
+                              fit: BoxFit.scaleDown,
+                              width: 150,
+                              height: 150,
+                            ),
+                          ],
+                        ),
                       ),
-                    ],
+                    ),
                   ),
                 ),
+                const SizedBox(
+                  width: 40,
+                )
               ],
             ),
           ),
-        ),
-        Flexible(
-          flex: 1,
-          child: Card(
-            margin: const EdgeInsets.symmetric(horizontal: 50, vertical: 10),
+          Card(
+            margin: const EdgeInsets.symmetric(horizontal: 50),
             child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Leaderboard",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+              padding: const EdgeInsets.all(16.0),
+              child: Stack(
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const Text(
+                        "Workers Hour Metrics",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
+                      const SizedBox(height: 8),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          IconButton(
+                            onPressed: () {
+                              setState(() {
+                                if (selectedTimeRange == "Today") {
+                                  selectedTimeRange = "This Year";
+                                } else if (selectedTimeRange == "This Week") {
+                                  selectedTimeRange = "Today";
+                                } else if (selectedTimeRange == "This Month") {
+                                  selectedTimeRange = "This Week";
+                                } else if (selectedTimeRange == "This Year") {
+                                  selectedTimeRange = "This Month";
+                                } else {
+                                  selectedTimeRange = "Today";
+                                }
+                              });
+                            },
+                            icon: const Icon(IconlyBold.arrow_left_2),
+                          ),
+                          Text(
+                            selectedTimeRange,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          IconButton(
+                            onPressed: () {
+                              setState(() {
+                                if (selectedTimeRange == "Today") {
+                                  selectedTimeRange = "This Week";
+                                } else if (selectedTimeRange == "This Week") {
+                                  selectedTimeRange = "This Month";
+                                } else if (selectedTimeRange == "This Month") {
+                                  selectedTimeRange = "This Year";
+                                } else if (selectedTimeRange == "This Year") {
+                                  selectedTimeRange = "Today";
+                                } else {
+                                  selectedTimeRange = "Today";
+                                }
+                              });
+                            },
+                            icon: const Icon(IconlyBold.arrow_right_2),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(
+                        height: 20,
+                      ),
+                      isLoading
+                          ? const Column(
+                              children: [
+                                CircularProgressIndicator(),
+                                SizedBox(
+                                  height: 20,
+                                ),
+                                Text(
+                                  'Fetching Data from Database. Please wait',
+                                  style: TextStyle(
+                                    color: Color(0xff68737d),
+                                  ),
+                                )
+                              ],
+                            )
+                          : Column(
+                              children: [
+                                AspectRatio(
+                                  aspectRatio: 4,
+                                  child: BarChart(
+                                    BarChartData(
+                                      alignment: BarChartAlignment.spaceAround,
+                                      barTouchData: BarTouchData(
+                                        touchTooltipData: BarTouchTooltipData(
+                                          getTooltipItem: (group, groupIndex,
+                                              rod, rodIndex) {
+                                            return BarTooltipItem(
+                                              '${_getWorkerName(group.x)}\n',
+                                              const TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                              children: [
+                                                TextSpan(
+                                                  text:
+                                                      '${rod.toY.toString()} worked hours',
+                                                  style: const TextStyle(
+                                                      color: Colors.white),
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                      titlesData: FlTitlesData(
+                                        leftTitles: const AxisTitles(
+                                          sideTitles: SideTitles(
+                                            showTitles: true,
+                                            reservedSize: 50,
+                                          ),
+                                        ),
+                                        bottomTitles: AxisTitles(
+                                          sideTitles: SideTitles(
+                                            showTitles: true,
+                                            getTitlesWidget: _getBottomTitles,
+                                            reservedSize: 50,
+                                          ),
+                                        ),
+                                        topTitles: const AxisTitles(
+                                            drawBelowEverything: false),
+                                        rightTitles: const AxisTitles(
+                                            drawBelowEverything: false),
+                                      ),
+                                      borderData: FlBorderData(show: true),
+                                      gridData: const FlGridData(show: true),
+                                      barGroups: _getSortedBarData(
+                                          selectedTimeRange == "Today"
+                                              ? _getTodayBarData()
+                                              : selectedTimeRange == "This Week"
+                                                  ? _getWeeklyBarData()
+                                                  : selectedTimeRange ==
+                                                          "This Month"
+                                                      ? _getMonthlyBarData()
+                                                      : selectedTimeRange ==
+                                                              "This Year"
+                                                          ? _getYearlyBarData()
+                                                          : _getYearlyBarData()),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                      const SizedBox(
+                        height: 30,
+                      ),
+                    ],
+                  ),
+                  // Sorting dropdown
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Row(
+                      children: [
+                        const Text(
+                          'Sort: ',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black54),
+                        ),
+                        DropdownButton<String>(
+                          value: selectedSorting,
+                          onChanged: (String? newValue) {
+                            setState(() {
+                              selectedSorting = newValue!;
+                            });
+                          },
+                          focusColor: Colors.transparent,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blueAccent,
+                          ),
+                          icon: const Icon(
+                            Icons.arrow_drop_down,
+                            color: Colors.blueAccent,
+                          ),
+                          underline: Container(), // Removes the underline
+                          items: <String>['Alphabetical', 'Highest', 'Lowest']
+                              .map<DropdownMenuItem<String>>((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 12.0, horizontal: 16.0),
+                                child: Text(value),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 8),
-                    // Display the top 5 workers based on selected time range
-                    ..._getTop5Workers(
-                      selectedTimeRange == "Today"
-                          ? workHours
-                          : selectedTimeRange == "This Week"
-                              ? weeklyWorkHours
-                              : selectedTimeRange == "This Month"
-                                  ? monthlyWorkHours
-                                  : yearlyWorkHours,
-                    ).map((worker) {
-                      return ListTile(
-                        leading: Icon(Icons.star, color: Colors.amber),
-                        title: Text(worker['name']),
-                        trailing: Text(
-                            "${worker['workHours'].toStringAsFixed(1)} hrs"),
-                      );
-                    }).toList(),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
+          !isLoading
+              ? Flexible(
+                  fit: FlexFit.tight,
+                  flex: 1,
+                  child: SizedBox(
+                    width: MediaQuery.sizeOf(context).width,
+                    child: Card(
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: 50, vertical: 10),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "Leaderboard",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              // Get the top 5 workers based on the selected time range
+                              Builder(
+                                builder: (context) {
+                                  final top5Workers = _getTop5Workers(
+                                    selectedTimeRange == "Today"
+                                        ? workHours
+                                        : selectedTimeRange == "This Week"
+                                            ? weeklyWorkHours
+                                            : selectedTimeRange == "This Month"
+                                                ? monthlyWorkHours
+                                                : yearlyWorkHours,
+                                  );
+
+                                  if (top5Workers.isEmpty) {
+                                    // Display "No data to show" when the list is empty
+                                    return const Center(
+                                      child: Text(
+                                        "No data to show",
+                                        style: TextStyle(
+                                          color: Colors.grey,
+                                          fontSize: 18,
+                                        ),
+                                      ),
+                                    );
+                                  }
+
+                                  // Display the list of top 5 workers
+                                  return Column(
+                                    children: top5Workers.map((worker) {
+                                      return ListTile(
+                                        leading: const Icon(Icons.star,
+                                            color: Colors.amber),
+                                        title: Text(worker['name']),
+                                        trailing: Text(
+                                          "${worker['workHours'].toStringAsFixed(1)} hrs",
+                                        ),
+                                      );
+                                    }).toList(),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+              : Container(),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          await _fetchDatas();
+        },
+        backgroundColor: Colors.greenAccent,
+        foregroundColor: Colors.black87,
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.refresh,
+            ),
+            Text(
+              'Refresh',
+              style: TextStyle(
+                  fontSize: 12, fontWeight: FontWeight.bold, height: 0.5),
+            )
+          ],
         ),
-      ],
+      ),
     );
   }
 

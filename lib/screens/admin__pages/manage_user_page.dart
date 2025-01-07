@@ -5,7 +5,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
 import 'package:iconly/iconly.dart';
 import 'package:nlrc_rfid_scanner/assets/themeData.dart';
-import 'package:nlrc_rfid_scanner/backend/data/fetch_users.dart';
+import 'package:nlrc_rfid_scanner/backend/data/fetch_data.dart';
+import 'package:nlrc_rfid_scanner/backend/data/file_reader.dart';
+import 'package:nlrc_rfid_scanner/main.dart';
 import 'package:shimmer_animation/shimmer_animation.dart';
 //import 'package:nlrc_rfid_scanner/backend/data/users.dart';
 import 'dart:io';
@@ -69,36 +71,35 @@ class _ManageUserPageState extends State<ManageUserPage> {
         if (_rfidData.isNotEmpty && _rfidData.length >= 9) {
           String filteredData = _filterRFIDData(_rfidData);
           filteredData = '$filteredData';
-          print(filteredData);
+
+          bool isRFIDExists = _checkRFIDExists(filteredData);
           Navigator.pop(context);
-          setState(() {
-            _rfidController.text = filteredData;
-          });
-          showDialog(
-            context: context,
-            builder: (context) {
-              return _buildUserFormDialog('Add User', _saveUser);
-            },
-          );
+
+          if (isRFIDExists) {
+            setState(() {
+              _rfidController.text = filteredData;
+            });
+
+            showDialog(
+              context: context,
+              builder: (context) {
+                return _buildUserFormDialog('Add User', _saveUser);
+              },
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              snackBarFailed('RFID Already exists', context),
+            );
+          }
 
           setState(() {
             _rfidData = ''; // Clear RFID data after processing
           });
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 400, vertical: 10),
-              content: Text(
-                'RFID data is empty. Please try again',
-                textAlign: TextAlign.center,
-              ),
-              backgroundColor: Colors.redAccent,
-            ),
-          );
+              snackBarFailed('RFID data is empty. Please try again', context));
         }
       }
-      //}
 
       _lastKeypressTime = currentTime; // Update the last keypress time
     }
@@ -121,6 +122,16 @@ class _ManageUserPageState extends State<ManageUserPage> {
         });
       }
     });
+  }
+
+  bool _checkRFIDExists(String rfid) {
+    // Look through the users list and check if any entry matches the RFID
+    for (var user in users) {
+      if (user['rfid'] == rfid) {
+        return true; // RFID exists in the list
+      }
+    }
+    return false; // RFID does not exist
   }
 
   @override
@@ -539,7 +550,10 @@ class _ManageUserPageState extends State<ManageUserPage> {
           'position': position,
           'office': office,
           'imagePath': imagePath,
-        }).then((_) {
+        }).then((_) async {
+          await fetchDataAndGenerateDartFile();
+          users = await loadUsers();
+
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
             snackBarSuccess('User added successfully!', context),

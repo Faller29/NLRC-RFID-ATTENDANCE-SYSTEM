@@ -1,19 +1,23 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:nlrc_rfid_scanner/backend/data/announcement_backend.dart';
+import 'package:nlrc_rfid_scanner/backend/data/fetch_attendance.dart';
 import 'package:nlrc_rfid_scanner/backend/data/file_reader.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:nlrc_rfid_scanner/backend/data/fetch_users.dart';
+import 'package:nlrc_rfid_scanner/backend/data/fetch_data.dart';
 import 'package:nlrc_rfid_scanner/screens/homepage.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
-List<Map<String, dynamic>> localUsers = []; // Use dynamic for flexibility
+//List<Map<String, dynamic>> localUsers = [];
 List<Map<String, dynamic>> users = [];
 List<Map<String, dynamic>> attendance = [];
+Map<String, dynamic>? adminData = {};
+Map<String, dynamic> announcement = {};
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,13 +27,30 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   //await fetchUsers();
-  await fetchDataAndGenerateDartFile();
-  await fetchAttendance();
-  // Use the path where your file is stored
+
+  await checkConnectivity();
+
+  runApp(const MyApp());
+}
+
+Future<void> checkConnectivity() async {
+  final result = await InternetAddress.lookup('example.com');
+  if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+    await fetchDataAndGenerateDartFile();
+    await fetchAttendance();
+    await fetchAdminLogin();
+    await fetchAnnouncements();
+
+    await fetchUsers();
+    await fetchLoggedUsers();
+    await fetchAttendanceData();
+    deleteExpiredAnnouncements();
+  }
+  //announcement = (await loadAnnouncements())!;
+  print(announcement);
   users = await loadUsers();
   attendance = await loadAttendance();
-  print(attendance);
-  runApp(const MyApp());
+  adminData = await loadAdmin();
 }
 
 /* Future<void> fetchUsers() async {

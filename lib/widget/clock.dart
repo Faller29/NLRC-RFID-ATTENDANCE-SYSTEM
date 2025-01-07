@@ -22,7 +22,7 @@ class _ClockWidgetState extends State<ClockWidget> {
       builder: (context, snapshot) {
         final now = DateTime.now();
         final formattedDate =
-            DateFormat('EEEE: MMMM, d, y').format(now); // Date format
+            DateFormat('EEEE: MMMM d, y').format(now); // Date format
         final dayName = DateFormat('EEEE').format(now);
 
         return Center(

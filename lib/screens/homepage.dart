@@ -15,7 +15,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:nlrc_rfid_scanner/widget/drawer.dart';
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key}) : super(key: key);
+  const MyHomePage({super.key});
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -32,7 +32,6 @@ class _MyHomePageState extends State<MyHomePage> {
   bool _isReceiveMode = true; //variable for "Receive" vs "Away" mode
   List<String> _awayModeNotifications =
       []; // List to store RFID data in Away mode
-
   @override
   void initState() {
     super.initState();
@@ -94,12 +93,14 @@ class _MyHomePageState extends State<MyHomePage> {
         // Ensure RFID data is not empty and greater than 9 characters before processing
         if (_rfidData.isNotEmpty && _rfidData.length >= 9) {
           String filteredData = _filterRFIDData(_rfidData);
+          String loggedUser;
           filteredData = '$filteredData';
-
           // Check if the scanned RFID exists in the users list
           bool isRFIDExists = _checkRFIDExists(filteredData);
 
           if (isRFIDExists) {
+            loggedUser = getRFID(filteredData);
+
             if (_isReceiveMode) {
               // Add to notification list and show modal immediately in receive mode
               _addToAwayModeNotifications(filteredData);
@@ -156,6 +157,19 @@ class _MyHomePageState extends State<MyHomePage> {
       }
     }
     return false; // RFID does not exist
+  }
+
+  String getRFID(String rfid) {
+    String loggedUser;
+
+    // Look through the users list and check if any entry matches the RFID
+    for (var user in users) {
+      if (user['rfid'] == rfid) {
+        loggedUser = user['name'];
+        return loggedUser; // RFID exists in the list
+      }
+    }
+    return 'No user'; // RFID does not exist
   }
 
   bool _isRFIDInput(String data, Duration timeDifference) {
@@ -235,17 +249,17 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   // Add RFID data to notifications list in "Away" mode
-  void _addToAwayModeNotifications(String rfidData) {
+  void _addToAwayModeNotifications(String loggedUser) {
     final DateTime currentTime = DateTime.now(); // Record the timestamp
 
     // Check if the RFID data already exists in the notifications list
     final exists = _awayModeNotifications
-        .any((notification) => notification.contains(rfidData));
+        .any((notification) => notification.contains(loggedUser));
 
     if (!exists) {
       setState(() {
         _awayModeNotifications.add(
-            '$rfidData|$currentTime'); // Add only if not already in the list
+            '$loggedUser|$currentTime'); // Add only if not already in the list
       });
     } else {
       debugPrint('RFID data already exists in the notifications list.');
@@ -266,77 +280,84 @@ class _MyHomePageState extends State<MyHomePage> {
     return Positioned(
       top: 10,
       right: 10,
-      child: Column(
-        children: _awayModeNotifications.map((notification) {
-          final parts = notification.split('|'); // Split RFID and timestamp
-          final rfid = parts[0];
-          final timestamp = DateTime.parse(parts[1]); // Parse the timestamp
-          final DateFormat timeReceived = DateFormat('hh:mm');
-          return InkWell(
-            onTap: () {
-              final notificationIndex =
-                  _awayModeNotifications.indexOf(notification);
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(context).height, maxWidth: 300),
+        child: SingleChildScrollView(
+          child: Column(
+            children: _awayModeNotifications.map((notification) {
+              final parts = notification.split('|'); // Split RFID and timestamp
+              final rfid = parts[0];
+              final timestamp = DateTime.parse(parts[1]); // Parse the timestamp
+              final DateFormat timeReceived = DateFormat('hh:mm a');
+              // Find the index of the RFID in the awayModeNotifications
+              var user = _findUserByRFID(rfid);
+              String name = user!['name'];
+              return InkWell(
+                onTap: () {
+                  final notificationIndex =
+                      _awayModeNotifications.indexOf(notification);
 
-              _showRFIDModal(
-                rfid,
-                timestamp,
-                onRemoveNotification: () {
-                  setState(() {
-                    _awayModeNotifications
-                        .removeAt(notificationIndex); // Remove notification
-                  });
+                  _showRFIDModal(
+                    rfid,
+                    timestamp,
+                    onRemoveNotification: () {
+                      setState(() {
+                        _awayModeNotifications
+                            .removeAt(notificationIndex); // Remove notification
+                      });
+                    },
+                  );
                 },
-              );
-            },
-            child: Stack(
-              children: [
-                Container(
-                  height: 50,
-                  width: 130,
-                  alignment: Alignment.center,
-                  margin: const EdgeInsets.only(bottom: 10),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.green,
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: [
-                      BoxShadow(
-                          color: Colors.black26,
-                          blurRadius: 6,
-                          offset: Offset(0, 2)),
-                    ],
-                  ),
-                ),
-                Positioned(
-                  left: 0,
-                  top: 0,
-                  child: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    child: Text(
-                      '${timeReceived.format(timestamp)}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.white,
+                child: Stack(
+                  children: [
+                    Container(
+                      height: 50,
+                      width: 200,
+                      alignment: Alignment.center,
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 6,
+                              offset: Offset(0, 2)),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${name.toUpperCase()}',
+                          style: TextStyle(
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-                Positioned(
-                  bottom: 22,
-                  left: 25,
-                  child: Text(
-                    rfid,
-                    style: TextStyle(
-                      color: Colors.white,
+                    Positioned(
+                      left: 0,
+                      top: 0,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 2),
+                        child: Text(
+                          '${timeReceived.format(timestamp)}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                )
-              ],
-            ),
-          );
-        }).toList(),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ),
       ),
     );
   }
@@ -446,23 +467,6 @@ class _MyHomePageState extends State<MyHomePage> {
             child: Container(),
           ),
         ],
-      ),
-    );
-  }
-
-// Navigate to the admin login page
-  void _navigateToAdminLogin(BuildContext context) {
-    /* Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(
-          builder: (context) =>
-              AdminPage()), 
-      (Route<dynamic> route) => false, // Removes all the previous routes
-    ); */
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AdminPage(),
       ),
     );
   }

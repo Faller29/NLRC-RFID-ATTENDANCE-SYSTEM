@@ -163,3 +163,107 @@ ${jsonEncode(attendanceList.map((e) => e.toMap()).toList())}
     print('Error fetching data from Firebase: $e');
   }
 }
+
+Future<void> fetchAdminLogin() async {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  try {
+    // Fetch admin data from Firestore
+    DocumentSnapshot snapshot =
+        await _firestore.collection('admin').doc('account').get();
+
+    if (snapshot.exists) {
+      Map<String, dynamic> adminData = snapshot.data() as Map<String, dynamic>;
+
+      // Create a JSON string from the admin data
+      String jsonContent = jsonEncode(adminData);
+
+      // Specify the file path for local storage
+      final directory = await getApplicationDocumentsDirectory();
+      final file = File('${directory.path}/admin_account.json');
+
+      // Write the JSON content to the file
+      await file.writeAsString(jsonContent);
+
+      print('Admin data saved locally at: ${file.path}');
+    } else {
+      print('Admin document does not exist in Firestore.');
+    }
+  } catch (e) {
+    print('Error fetching admin data from Firebase: $e');
+  }
+}
+
+// Define your Announcement class with the correct fields
+class Announcement {
+  final String title;
+  final String announcement;
+  final String startDate;
+  final String endDate;
+
+  Announcement({
+    required this.title,
+    required this.announcement,
+    required this.startDate,
+    required this.endDate,
+  });
+
+  // Factory method to create an Announcement from a map (like the one retrieved from Firestore)
+  factory Announcement.fromMap(Map<String, dynamic> map) {
+    // Function to format Timestamp into desired string format
+    String formatTime(Timestamp timestamp) {
+      DateTime dateTime = timestamp.toDate();
+      return DateFormat('MMM dd yyyy hh:mm a')
+          .format(dateTime); // Format as "MMM dd yyyy hh:mm a"
+    }
+
+    return Announcement(
+      title: map['title']?.toString() ?? '',
+      announcement: map['announcement']?.toString() ?? '',
+      startDate: map['startDate'] != null ? formatTime(map['startDate']) : '',
+      endDate: map['endDate'] != null ? formatTime(map['endDate']) : '',
+    );
+  }
+
+  // Convert Announcement object to map (useful if you need to save or send data)
+  Map<String, dynamic> toMap() {
+    return {
+      'title': title,
+      'announcement': announcement,
+      'startDate': startDate,
+      'endDate': endDate,
+    };
+  }
+
+  // Convert Announcement to JSON
+  String toJson() => json.encode(toMap());
+}
+
+// Function to fetch data from Firebase and save it in a Dart file
+Future<void> fetchAnnouncements() async {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  try {
+    // Fetch announcements data from Firebase Firestore
+    QuerySnapshot snapshot = await _firestore.collection('announcements').get();
+
+    // Map the fetched data to a list of announcement maps
+    final List<Announcement> announcementList = snapshot.docs.map((doc) {
+      return Announcement.fromMap(doc.data() as Map<String, dynamic>);
+    }).toList();
+
+    // Create a JSON file content from the fetched data
+    String jsonFileContent = jsonEncode(announcementList);
+
+    // Specify the file path where the JSON file will be stored
+    final directory = await getApplicationDocumentsDirectory();
+    final file = File('${directory.path}/announcements.json');
+
+    // Write the JSON file content to the file
+    await file.writeAsString(jsonFileContent);
+
+    print('Announcements saved successfully at: ${file.path}');
+  } catch (e) {
+    print('Error fetching announcements from Firebase: $e');
+  }
+}

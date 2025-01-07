@@ -1,5 +1,5 @@
 // This file was generated automatically. Do not modify.
-import 'package:nlrc_rfid_scanner/backend/data/fetch_users.dart';
+import 'package:nlrc_rfid_scanner/backend/data/fetch_data.dart';
 
 List<Map<String, dynamic>> users = [
   {

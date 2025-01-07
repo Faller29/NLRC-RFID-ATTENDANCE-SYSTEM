@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:nlrc_rfid_scanner/main.dart';
-import 'package:nlrc_rfid_scanner/screens/admin_page.dart';
+import 'package:nlrc_rfid_scanner/widget/login.dart';
 
 class CustomDrawer extends StatefulWidget {
   @override
@@ -131,24 +131,16 @@ class _CustomDrawerState extends State<CustomDrawer> {
               ],
             ),
             onTap: () {
-              // Navigate to admin login page
-              Navigator.pop(context); // Close the drawer
-              _navigateToAdminLogin(context);
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return LoginWidget();
+                },
+              );
             },
           ),
         ],
       ),
     );
-  }
-
-  // Navigation function for the Admin Login page
-  void _navigateToAdminLogin(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) =>
-            AdminPage(), // Replace with your actual admin login page
-      ),
-    ).then((value) => setState(() {}));
   }
 }
