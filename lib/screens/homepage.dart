@@ -464,7 +464,7 @@ class _MyHomePageState extends State<MyHomePage> {
           Center(
             child: ClockWidget(),
           ),
-          if (!announcementIsOn)
+          if (announcementIsOn)
             Positioned(
                 child: SizedBox(
                     width: 400,

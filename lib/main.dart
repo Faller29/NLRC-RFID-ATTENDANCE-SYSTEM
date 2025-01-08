@@ -59,7 +59,7 @@ Future<void> checkConnectivity() async {
     await fetchUsers();
     await fetchLoggedUsers();
     await fetchAttendanceData();
-    deleteExpiredAnnouncements();
+    await deleteExpiredAnnouncements();
   }
 
   adminAnnouncement = await loadAnnouncements();

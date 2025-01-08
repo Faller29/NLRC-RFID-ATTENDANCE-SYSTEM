@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-void deleteExpiredAnnouncements() async {
+Future<void> deleteExpiredAnnouncements() async {
   final now = DateTime.now();
   final todayMidnight = DateTime(now.year, now.month,
       now.day); // Reset time to midnight to compare only the date.
