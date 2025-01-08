@@ -66,7 +66,7 @@ ${jsonEncode(userList.map((e) => e.toMap()).toList())}
 ''';
 
     // Specify the file path where the Dart file will be stored
-    final directory = await getApplicationDocumentsDirectory();
+    final directory = await getApplicationCacheDirectory();
     final file = File('${directory.path}/users.json');
 
     // Write the Dart file content to the file
@@ -127,32 +127,28 @@ class Attendance {
 Future<void> fetchAttendance() async {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  DateTime now = DateTime.now();
-  String formattedDate = DateFormat('MMM_yyyy').format(now);
-  String formattedDay = DateFormat('dd').format(now);
+  //DateTime now = DateTime.now();
+  //String formattedDate = DateFormat('MMM_yyyy').format(now);
+  final todayDate = DateFormat('MM_dd_yyyy').format(DateTime.now());
 
   try {
-    // Fetch user data from Firebase Firestore
+    // Fetch user attendance data for today from the user_attendance collection
     QuerySnapshot snapshot = await _firestore
-        .collection('attendances')
-        .doc(formattedDate)
-        .collection(formattedDay)
+        .collection('user_attendance')
+        .where('date', isEqualTo: todayDate) // Filter by today's date
         .get();
+
     final List<Attendance> attendanceList = snapshot.docs.map((doc) {
       return Attendance.fromMap(doc.data() as Map<String, dynamic>);
     }).toList();
-// This file was generated automatically. Do not modify.
-/* import 'package:nlrc_rfid_scanner/backend/data/fetch.dart';
 
-List<Map<String, dynamic>> users =  */
     // Create a Dart file content from the fetched data
     String dartFileContent = '''
-
 ${jsonEncode(attendanceList.map((e) => e.toMap()).toList())}
 ''';
 
     // Specify the file path where the Dart file will be stored
-    final directory = await getApplicationDocumentsDirectory();
+    final directory = await getApplicationCacheDirectory();
     final file = File('${directory.path}/attendance.json');
 
     // Write the Dart file content to the file
@@ -179,7 +175,7 @@ Future<void> fetchAdminLogin() async {
       String jsonContent = jsonEncode(adminData);
 
       // Specify the file path for local storage
-      final directory = await getApplicationDocumentsDirectory();
+      final directory = await getApplicationCacheDirectory();
       final file = File('${directory.path}/admin_account.json');
 
       // Write the JSON content to the file
@@ -220,8 +216,8 @@ class Announcement {
     return Announcement(
       title: map['title']?.toString() ?? '',
       announcement: map['announcement']?.toString() ?? '',
-      startDate: map['startDate'] != null ? formatTime(map['startDate']) : '',
-      endDate: map['endDate'] != null ? formatTime(map['endDate']) : '',
+      startDate: formatTime(map['startDate']) ?? '',
+      endDate: formatTime(map['endDate']) ?? '',
     );
   }
 
@@ -253,10 +249,12 @@ Future<void> fetchAnnouncements() async {
     }).toList();
 
     // Create a JSON file content from the fetched data
-    String jsonFileContent = jsonEncode(announcementList);
+    String jsonFileContent = '''
 
+${jsonEncode(announcementList.map((e) => e.toMap()).toList())}
+''';
     // Specify the file path where the JSON file will be stored
-    final directory = await getApplicationDocumentsDirectory();
+    final directory = await getApplicationCacheDirectory();
     final file = File('${directory.path}/announcements.json');
 
     // Write the JSON file content to the file

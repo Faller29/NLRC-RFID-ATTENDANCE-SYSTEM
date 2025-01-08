@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:iconly/iconly.dart';
 import 'package:nlrc_rfid_scanner/assets/themeData.dart';
 import 'package:nlrc_rfid_scanner/main.dart';
 import 'package:nlrc_rfid_scanner/screens/admin_page.dart';
@@ -72,25 +74,27 @@ class _LoginWidgetState extends State<LoginWidget> {
   Widget build(BuildContext context) {
     return Card(
       margin: EdgeInsets.symmetric(
-        horizontal: MediaQuery.sizeOf(context).width * 0.35,
-        vertical: MediaQuery.sizeOf(context).height * 0.3,
+        horizontal: MediaQuery.sizeOf(context).width * 0.36,
+        //vertical: MediaQuery.sizeOf(context).height * 0.3,
       ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
       child: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               'Admin Log in',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
             ),
             SizedBox(height: 20),
             _buildTextField('Username', username),
+            SizedBox(height: 10),
             _buildTextField('Password', password),
-            SizedBox(height: 20),
+            SizedBox(height: 30),
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -111,14 +115,26 @@ class _LoginWidgetState extends State<LoginWidget> {
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.greenAccent,
-                    foregroundColor: Colors.white,
+                    foregroundColor: Color.fromARGB(255, 60, 45, 194),
                   ),
                   onPressed: () {
                     _validateLogin(context);
                   },
-                  child: Text(
-                    'Log in',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                  child: Row(
+                    children: [
+                      Icon(
+                        FontAwesomeIcons.unlock,
+                        color: Color.fromARGB(255, 60, 45, 194),
+                        size: 15,
+                      ),
+                      SizedBox(
+                        width: 5,
+                      ),
+                      Text(
+                        'Log in',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -136,9 +152,25 @@ class _LoginWidgetState extends State<LoginWidget> {
         controller: controller,
         obscureText: label == 'Password', // Hide text for password field
         decoration: InputDecoration(
+          prefixIcon: label == 'Password'
+              ? Icon(
+                  IconlyLight.password,
+                )
+              : Icon(
+                  IconlyLight.profile,
+                ),
+          labelStyle: TextStyle(fontWeight: FontWeight.bold, height: 0.5),
           labelText: label,
           hintText: 'Enter $label',
-          border: OutlineInputBorder(),
+          border: UnderlineInputBorder(
+            borderRadius: BorderRadius.circular(25),
+          ),
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: 20,
+          ),
+        ),
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
         ),
       ),
     );

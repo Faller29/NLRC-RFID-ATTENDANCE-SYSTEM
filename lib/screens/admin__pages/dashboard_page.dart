@@ -1,9 +1,15 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:iconly/iconly.dart';
 import 'package:intl/intl.dart';
+import 'package:nlrc_rfid_scanner/assets/themeData.dart';
 import 'package:nlrc_rfid_scanner/backend/data/fetch_attendance.dart';
+import 'package:nlrc_rfid_scanner/backend/data/file_reader.dart';
+import 'package:nlrc_rfid_scanner/main.dart';
+import 'package:shimmer_animation/shimmer_animation.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -34,12 +40,27 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> _fetchDatas() async {
+    final result = await InternetAddress.lookup('example.com');
+
     setState(() {
       isLoading = true;
     });
-    await fetchUsers();
-    await fetchLoggedUsers();
-    await fetchAttendanceData();
+    if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+      await fetchUsers();
+      await fetchLoggedUsers();
+      await fetchAttendanceData();
+      ScaffoldMessenger.of(context).showSnackBar(
+        snackBarSuccess('Data Reloaded', context),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        snackBarFailed(
+            'No internet connection to Fetch from Database', context),
+      );
+    }
+
+    users = await loadUsers();
+    attendance = await loadAttendance();
     setState(() {
       isLoading = false;
     });
@@ -84,7 +105,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 ),
                 _buildStatCard(
                   "Workers",
-                  "${users.length}",
+                  "${numberOfUsers.length}",
                   Icons.work,
                   Colors.green,
                 ),
@@ -163,7 +184,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         "Workers Hour Metrics",
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          fontSize: 20,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -191,7 +212,11 @@ class _DashboardPageState extends State<DashboardPage> {
                           ),
                           Text(
                             selectedTimeRange,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: Colors.black54,
+                            ),
                           ),
                           IconButton(
                             onPressed: () {
@@ -353,7 +378,7 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
           !isLoading
               ? Flexible(
-                  fit: FlexFit.tight,
+                  fit: FlexFit.loose,
                   flex: 1,
                   child: SizedBox(
                     width: MediaQuery.sizeOf(context).width,
@@ -361,19 +386,21 @@ class _DashboardPageState extends State<DashboardPage> {
                       margin: const EdgeInsets.symmetric(
                           horizontal: 50, vertical: 10),
                       child: Padding(
-                        padding: const EdgeInsets.all(8.0),
+                        padding: const EdgeInsets.all(20.0),
                         child: SingleChildScrollView(
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              const Text(
-                                "Leaderboard",
+                              const SizedBox(height: 10),
+
+                              Text(
+                                "Leaderboard $selectedTimeRange",
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 16,
+                                  fontSize: 20,
                                 ),
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 30),
                               // Get the top 5 workers based on the selected time range
                               Builder(
                                 builder: (context) {
@@ -401,14 +428,56 @@ class _DashboardPageState extends State<DashboardPage> {
                                   }
 
                                   // Display the list of top 5 workers
-                                  return Column(
-                                    children: top5Workers.map((worker) {
-                                      return ListTile(
-                                        leading: const Icon(Icons.star,
-                                            color: Colors.amber),
-                                        title: Text(worker['name']),
-                                        trailing: Text(
-                                          "${worker['workHours'].toStringAsFixed(1)} hrs",
+                                  return Wrap(
+                                    spacing:
+                                        0.0, // Horizontal space between items
+                                    runSpacing:
+                                        10.0, // Vertical space between rows
+                                    children: top5Workers
+                                        .asMap()
+                                        .entries
+                                        .map((entry) {
+                                      final index = entry.key;
+                                      final worker = entry.value;
+
+                                      return SizedBox(
+                                        width: MediaQuery.of(context)
+                                                .size
+                                                .width /
+                                            8, // Divide equally across the screen width
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.center,
+                                          children: [
+                                            Shimmer(
+                                              duration: Duration(seconds: 10),
+                                              child: Image.asset(
+                                                'lib/assets/images/medal/${index + 1}.png',
+                                                fit: BoxFit.cover,
+                                                height: 100,
+                                                width: 100,
+                                              ),
+                                            ),
+                                            const SizedBox(
+                                                height:
+                                                    5), // Space between the icon and the text
+                                            Text(
+                                              worker['name'],
+                                              style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 16),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                            Text(
+                                              "${worker['workHours'].toStringAsFixed(1)} hrs",
+                                              style: TextStyle(
+                                                color: Colors.grey,
+                                                fontSize: 16,
+                                              ),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ],
                                         ),
                                       );
                                     }).toList(),
@@ -587,24 +656,27 @@ class _DashboardPageState extends State<DashboardPage> {
       color: color,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 40, color: Colors.white),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: const TextStyle(color: Colors.white),
-            ),
-            Text(
-              value,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
+        child: SizedBox(
+          width: 100,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 40, color: Colors.white),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                style: const TextStyle(color: Colors.white),
               ),
-            ),
-          ],
+              Text(
+                value,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

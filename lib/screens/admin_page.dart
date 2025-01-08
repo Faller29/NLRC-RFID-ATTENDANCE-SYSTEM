@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:nlrc_rfid_scanner/backend/data/fetch_data.dart';
 import 'package:nlrc_rfid_scanner/screens/admin__pages/dashboard_page.dart';
@@ -50,23 +52,54 @@ class _AdminPageState extends State<AdminPage> {
         children: [
           // Side Navigation Bar
           Container(
-            width: 250,
+            width: 300,
             color: Colors.blueGrey[800],
             child: Column(
               children: [
                 // Header Section
                 Container(
                   color: Colors.blueGrey[900],
-                  height: 100,
+                  height: 150,
                   width: double.infinity,
                   alignment: Alignment.center,
-                  child: Text(
-                    'Admin Panel',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        child: Image.asset(
+                          'lib/assets/images/NLRC.jpg',
+                          fit: BoxFit.cover,
+                          height: 150,
+                          width: 250,
+                        ),
+                      ),
+                      Positioned(
+                        child: ClipRect(
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
+                            child: Container(
+                              color: Color.fromARGB(255, 15, 11, 83)
+                                  .withOpacity(0.4),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Positioned.fill(
+                        child: Align(
+                          alignment: Alignment.bottomCenter,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(
+                              'Admin Panel',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 // Navigation Menu Items
@@ -75,6 +108,8 @@ class _AdminPageState extends State<AdminPage> {
                     itemCount: _menuItems.length,
                     itemBuilder: (context, index) {
                       return ListTile(
+                        contentPadding:
+                            EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                         leading: Icon(
                           _menuItems[index]['icon'],
                           color: _selectedIndex == index

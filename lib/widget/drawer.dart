@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:iconly/iconly.dart';
 import 'package:intl/intl.dart';
 import 'package:nlrc_rfid_scanner/main.dart';
 import 'package:nlrc_rfid_scanner/widget/login.dart';
@@ -59,86 +61,195 @@ class _CustomDrawerState extends State<CustomDrawer> {
 
   @override
   Widget build(BuildContext context) {
+    double screenWidth = MediaQuery.of(context).size.width;
+
+    // Adjust margins based on screen width
+    double cardMargin;
+    if (screenWidth > 1500 && screenWidth < 1700) {
+      cardMargin = 430;
+      print(cardMargin);
+      print(screenWidth);
+    } else if (screenWidth > 1700) {
+      cardMargin = 430;
+      print(cardMargin);
+      print(screenWidth);
+    } else if (screenWidth < 1500) {
+      cardMargin = screenWidth * 0.285;
+      print(cardMargin);
+      print(screenWidth);
+    } else {
+      cardMargin = screenWidth * 0.235;
+      print(cardMargin);
+      print(screenWidth);
+    }
+
     return Drawer(
-      width: MediaQuery.sizeOf(context).width / 3,
+      elevation: 20,
+      width: cardMargin,
+      backgroundColor: Color.fromARGB(255, 226, 225, 228),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Container(
-              height: MediaQuery.sizeOf(context).height / 1.5,
-              width: double.maxFinite,
-              decoration: BoxDecoration(
-                color: Colors.black12,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  SizedBox(height: 10),
-                  Text(
-                    "Logged in Today",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: Colors.black,
-                    ),
+            child: SingleChildScrollView(
+              child: Card(
+                color: Colors.white,
+                elevation: 8,
+                shadowColor: Color.fromARGB(255, 44, 15, 148),
+                surfaceTintColor: Colors.white,
+                child: Container(
+                  height: MediaQuery.sizeOf(context).height / 1.2,
+                  width: double.maxFinite,
+                  decoration: BoxDecoration(
+                    color: const Color(0xffffffff),
+                    boxShadow: [
+                      BoxShadow(
+                        blurStyle: BlurStyle.outer,
+                        blurRadius: 10.0,
+                        color: Color(0xff4b39ef).withOpacity(0.8),
+                        offset: Offset(
+                          0.0,
+                          2.0,
+                        ),
+                      )
+                    ],
+                    borderRadius: BorderRadius.circular(15.0),
+                    shape: BoxShape.rectangle,
                   ),
-                  SizedBox(height: 10),
-                  // Display the users who logged in today
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: usersLoggedInToday.length,
-                      itemBuilder: (context, index) {
-                        final user = usersLoggedInToday[index];
-                        return ListTile(
-                          title: Text(
-                            '${user['name']} | ${user['officeType']}',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          subtitle: Text(
-                            'Time In: ${user['timeIn']} | Time Out: ${user['timeOut']}',
-                            style: TextStyle(
-                              fontSize: 11,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      SizedBox(height: 10),
+                      Text(
+                        "Logged in Today",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 26,
+                          color: Colors.black,
+                        ),
+                      ),
+                      SizedBox(height: 10),
+                      // Display the users who logged in today
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: usersLoggedInToday.length,
+                          itemBuilder: (context, index) {
+                            usersLoggedInToday.sort((a, b) => a['name']
+                                .toString()
+                                .compareTo(b['name'].toString()));
+
+                            final user = usersLoggedInToday[index];
+                            return Column(
+                              children: [
+                                ListTile(
+                                  title: Row(
+                                    children: [
+                                      Icon(
+                                        FontAwesomeIcons.user,
+                                        size: 15,
+                                      ),
+                                      SizedBox(
+                                        width: 10,
+                                      ),
+                                      Text(
+                                        '${user['name']}',
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                      Text(
+                                        ' - ',
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                      Text(
+                                        '${user['officeType']}',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: user['officeType'] == 'Office'
+                                              ? Colors.green
+                                              : Colors.blueAccent,
+                                          fontStyle: FontStyle.italic,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  subtitle: Row(
+                                    children: [
+                                      SizedBox(
+                                        width: 25,
+                                      ),
+                                      Text(
+                                        'Time In: ${user['timeIn']}          Time Out: ${user['timeOut'] == '' ? '--' : user['timeOut']}',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          height: 0.5,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: 300,
+                                  child: Divider(
+                                    height: 10,
+                                  ),
+                                )
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.greenAccent,
+                  padding: EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+                  shadowColor: Color.fromARGB(255, 44, 15, 148),
+                  elevation: 5),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    FontAwesomeIcons.unlock,
+                    color: Color.fromARGB(255, 60, 45, 194),
+                    size: 15,
+                  ),
+                  SizedBox(
+                    width: 5,
+                  ),
+                  Text(
+                    'Sign in',
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Color.fromARGB(255, 60, 45, 194),
+                        fontSize: 18),
                   ),
                 ],
               ),
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  barrierColor: Colors.black38,
+                  builder: (BuildContext context) {
+                    return Dialog(
+                        elevation: 0,
+                        shadowColor: Colors.transparent,
+                        backgroundColor: Colors.transparent,
+                        child: LoginWidget());
+                  },
+                );
+              },
             ),
-          ),
-          ListTile(
-            contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-            title: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.admin_panel_settings,
-                  color: Color.fromARGB(255, 60, 45, 194),
-                ),
-                SizedBox(width: 10),
-                Text(
-                  'Admin Login',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Color.fromARGB(255, 60, 45, 194),
-                  ),
-                ),
-              ],
-            ),
-            onTap: () {
-              showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  return LoginWidget();
-                },
-              );
-            },
-          ),
+          )
         ],
       ),
     );

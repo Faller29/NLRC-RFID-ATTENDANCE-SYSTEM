@@ -4,12 +4,15 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:iconly/iconly.dart';
 import 'package:intl/intl.dart';
 import 'package:nlrc_rfid_scanner/assets/themeData.dart';
 //import 'package:nlrc_rfid_scanner/assets/data/users.dart';
 import 'package:nlrc_rfid_scanner/main.dart';
 import 'package:nlrc_rfid_scanner/modals/scanned_modal.dart';
 import 'package:nlrc_rfid_scanner/screens/admin_page.dart';
+import 'package:nlrc_rfid_scanner/widget/announcement.dart';
 import 'package:nlrc_rfid_scanner/widget/clock.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:nlrc_rfid_scanner/widget/drawer.dart';
@@ -32,6 +35,7 @@ class _MyHomePageState extends State<MyHomePage> {
   bool _isReceiveMode = true; //variable for "Receive" vs "Away" mode
   List<String> _awayModeNotifications =
       []; // List to store RFID data in Away mode
+  bool announcementIsOn = false;
   @override
   void initState() {
     super.initState();
@@ -368,7 +372,7 @@ class _MyHomePageState extends State<MyHomePage> {
       drawer: CustomDrawer(),
       appBar: AppBar(
         foregroundColor: primaryWhite,
-        backgroundColor: Color.fromARGB(255, 60, 45, 194),
+        backgroundColor: Color.fromARGB(255, 44, 15, 148),
         title: Container(
           child: Row(
             children: [
@@ -460,6 +464,12 @@ class _MyHomePageState extends State<MyHomePage> {
           Center(
             child: ClockWidget(),
           ),
+          if (!announcementIsOn)
+            Positioned(
+                child: SizedBox(
+                    width: 400,
+                    height: MediaQuery.sizeOf(context).height,
+                    child: announcement())),
           _buildAwayModeNotifications(),
           KeyboardListener(
             focusNode: _focusNode,
@@ -468,6 +478,77 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ],
       ),
+      floatingActionButton: adminAnnouncement.length != 0
+          ? Stack(
+              children: [
+                FloatingActionButton(
+                  onPressed: () {
+                    setState(() {
+                      announcementIsOn = !announcementIsOn;
+                    });
+                  },
+                  child: Icon(FontAwesomeIcons.bell),
+                  backgroundColor: Color.fromARGB(255, 44, 15, 148),
+                  foregroundColor: Colors.white,
+                ),
+                if (adminAnnouncement.length >
+                    0) // Show the badge only if there are announcements
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: Container(
+                      padding: EdgeInsets.all(6), // Padding for the badge
+                      decoration: BoxDecoration(
+                        color: Colors.red, // Badge background color
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        '${adminAnnouncement.length}',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            )
+          : null,
+    );
+  }
+
+  Widget announcement() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('announcements')
+          .snapshots(), // Stream that listens to changes in the 'announcements' collection
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return Center(child: Text('No announcements available.'));
+        }
+
+        // Convert Firestore data into the format used by AnnouncementsWidget
+        final List<Map<String, dynamic>> announcements =
+            snapshot.data!.docs.map((doc) {
+          return {
+            'title': doc['title'] ?? 'No Title',
+            'announcement': doc['announcement'] ?? 'No Announcement',
+            'createdAt': doc['createdAt'] != null
+                ? DateFormat('MMM dd yyyy - hh:mm a')
+                    .format(doc['startDate'].toDate())
+                : 'No Start Date',
+          };
+        }).toList();
+
+        return AnnouncementsWidget(announcements: announcements);
+      },
     );
   }
 }

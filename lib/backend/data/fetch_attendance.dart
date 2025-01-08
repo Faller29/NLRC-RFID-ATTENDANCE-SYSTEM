@@ -4,7 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 
 int loggedUsersCount = 0;
-List<Map<String, dynamic>> users = [];
+List<Map<String, dynamic>> numberOfUsers = [];
 Map<String, double> workHours = {};
 Map<String, double> weeklyWorkHours = {}; // For weekly aggregation
 Map<String, double> monthlyWorkHours = {}; // For monthly aggregation
@@ -26,7 +26,7 @@ Future<void> fetchUsers() async {
       };
     }).toList();
 
-    users = fetchedUsers;
+    numberOfUsers = fetchedUsers;
 
     // Fetch attendance data for each user
   } catch (e) {
@@ -34,17 +34,18 @@ Future<void> fetchUsers() async {
   }
 }
 
-// Fetch logged users count for today
 Future<void> fetchLoggedUsers() async {
   try {
     final today = DateTime.now();
-    final monthYear = DateFormat('MMM_yyyy').format(today);
-    final day = DateFormat('dd').format(today);
+    final todayDate =
+        DateFormat('MM_dd_yyyy').format(today); // Format: 12_08_2024
 
-    final attendanceRef =
-        firestore.collection('attendances').doc(monthYear).collection(day);
+    // Reference to the new user_attendance collection
+    final attendanceRef = firestore.collection('user_attendance');
 
-    final snapshot = await attendanceRef.get();
+    // Fetch attendance records for today's date
+    final snapshot =
+        await attendanceRef.where('date', isEqualTo: todayDate).get();
 
     // Count how many users have logged in today (those who have a timeIn)
     int count = 0;
@@ -62,36 +63,50 @@ Future<void> fetchLoggedUsers() async {
   }
 }
 
-// Fetch attendance data for each user and calculate hours worked
 Future<void> fetchAttendanceData() async {
   try {
     final today = DateTime.now();
-    final monthYear = DateFormat('MMM_yyyy').format(today);
-    final day = DateFormat('dd').format(today);
+    final todayDate = DateFormat('MM_dd_yyyy').format(today);
 
-    for (var user in users) {
+    // Initialize worked hours map
+    workHours.clear();
+
+    for (var user in numberOfUsers) {
       final userId = user['rfid'];
+      double workedHours = 0;
+
+      // Query the user_attendance collection for today's date
       final attendanceRef = firestore
-          .collection('attendances')
-          .doc(monthYear)
-          .collection(day)
-          .doc(userId);
+          .collection('user_attendance')
+          .where('rfid',
+              isEqualTo:
+                  userId) // Ensure only the current user's attendance is fetched
+          .where('date', isEqualTo: todayDate);
 
       final attendanceDoc = await attendanceRef.get();
-      if (attendanceDoc.exists) {
-        final data = attendanceDoc.data();
-        final timeIn = (data?['timeIn'] as Timestamp?)?.toDate();
-        final timeOut = (data?['timeOut'] as Timestamp?)?.toDate();
 
-        if (timeIn != null && timeOut != null) {
-          final workedDuration = timeOut.difference(timeIn);
-          final workedHours = workedDuration.inHours +
-              (workedDuration.inMinutes.remainder(60) / 60);
+      // If documents are found, calculate worked hours
+      if (attendanceDoc.docs.isNotEmpty) {
+        for (var doc in attendanceDoc.docs) {
+          final data = doc.data();
+          final timeIn = (data['timeIn'] as Timestamp?)?.toDate();
+          DateTime? timeOut = (data['timeOut'] as Timestamp?)?.toDate();
 
-          workHours[userId] = workedHours;
+          // Substitute timeOut with DateTime.now() if it is null
+          if (timeIn != null) {
+            timeOut ??= DateTime.now();
+            final workedDuration = timeOut.difference(timeIn);
+            workedHours += workedDuration.inHours +
+                (workedDuration.inMinutes.remainder(60) / 60);
+          }
         }
       }
+
+      // If no attendance record is found, workedHours remains 0
+      workHours[userId] = workedHours;
     }
+
+    // Fetch additional data for weekly, monthly, and yearly attendance
     await _fetchWeeklyAttendanceData();
     await _fetchMonthlyAttendanceData();
     await fetchYearlyAttendanceData();
@@ -100,45 +115,51 @@ Future<void> fetchAttendanceData() async {
   }
 }
 
-// Fetch attendance data for the week
 Future<void> _fetchWeeklyAttendanceData() async {
   try {
     final today = DateTime.now();
     final weekStart = today.subtract(
         Duration(days: today.weekday - 1)); // Start of the week (Monday)
+    final weekEnd =
+        weekStart.add(Duration(days: 6)); // End of the week (Sunday)
 
-    for (var user in users) {
-      final userId = user['rfid'];
+    // Format the start and end dates to match the 'MM_dd_yyyy' format in Firestore
+    final weekStartDate = DateFormat('MM_dd_yyyy').format(weekStart);
+    final weekEndDate = DateFormat('MM_dd_yyyy').format(weekEnd);
+
+    // Reference to the user_attendance collection
+    for (var user in numberOfUsers) {
+      final rfid = user['rfid'];
       double totalWeeklyHours = 0;
 
-      // Iterate over the last 7 days
-      for (int i = 0; i < 7; i++) {
-        final day = weekStart.add(Duration(days: i));
-        final monthYear = DateFormat('MMM_yyyy').format(day);
-        final dayString = DateFormat('dd').format(day);
+      // Query attendance records for the user across the entire year by date range
+      final yearlyAttendanceRef = firestore
+          .collection('user_attendance')
+          .where('rfid', isEqualTo: rfid) // Filter by rfid
+          .where('date',
+              isGreaterThanOrEqualTo: weekStartDate) // Start of the year
+          .where('date', isLessThanOrEqualTo: weekEndDate) // End of the year
+          .get();
 
-        final attendanceRef = firestore
-            .collection('attendances')
-            .doc(monthYear)
-            .collection(dayString)
-            .doc(userId);
+      final querySnapshot = await yearlyAttendanceRef;
 
-        final attendanceDoc = await attendanceRef.get();
-        if (attendanceDoc.exists) {
-          final data = attendanceDoc.data();
-          final timeIn = (data?['timeIn'] as Timestamp?)?.toDate();
-          final timeOut = (data?['timeOut'] as Timestamp?)?.toDate();
+      // Loop through the entire year’s attendance and calculate total worked hours
+      for (var doc in querySnapshot.docs) {
+        final data = doc.data();
+        final timeIn = (data['timeIn'] as Timestamp?)?.toDate();
+        final timeOut = (data['timeOut'] as Timestamp?)?.toDate();
 
-          if (timeIn != null && timeOut != null) {
-            final workedDuration = timeOut.difference(timeIn);
-            final workedHours = workedDuration.inHours +
-                (workedDuration.inMinutes.remainder(60) / 60);
-            totalWeeklyHours += workedHours;
-          }
+        // Calculate worked hours if both timeIn and timeOut exist
+        if (timeIn != null && timeOut != null) {
+          final workedDuration = timeOut.difference(timeIn);
+          final workedHours = workedDuration.inHours +
+              (workedDuration.inMinutes.remainder(60) / 60);
+          totalWeeklyHours += workedHours;
         }
       }
 
-      weeklyWorkHours[userId] = totalWeeklyHours;
+      // Store the total yearly hours for the user
+      weeklyWorkHours[rfid] = totalWeeklyHours;
     }
   } catch (e) {
     debugPrint('Error fetching weekly attendance data: $e');
@@ -148,9 +169,9 @@ Future<void> _fetchWeeklyAttendanceData() async {
 // Fetch attendance data for the month
 Future<void> _fetchMonthlyAttendanceData() async {
   try {
-    final today = DateTime.now();
+    /* final today = DateTime.now();
     final monthYear =
-        DateFormat('MMM_yyyy').format(today); // Get current month and year
+        DateFormat('MM_dd_yyyy').format(today); // Get current month and year
 
     for (var user in users) {
       final userId = user['rfid'];
@@ -170,6 +191,46 @@ Future<void> _fetchMonthlyAttendanceData() async {
       }
 
       monthlyWorkHours[userId] = totalMonthlyHours;
+    } */
+
+    final currentMonth = DateTime.now().month;
+    final currentYear = DateTime.now().year;
+
+    for (var user in numberOfUsers) {
+      final rfid = user['rfid'];
+      double totalMonthlyHours = 0;
+
+      // Query attendance records for the user across the entire year by date range
+      final yearlyAttendanceRef = firestore
+          .collection('user_attendance')
+          .where('rfid', isEqualTo: rfid) // Filter by rfid
+          .where('date',
+              isGreaterThanOrEqualTo: DateFormat('MM_dd_yyyy').format(
+                  DateTime(currentYear, currentMonth, 1))) // Start of the year
+          .where('date',
+              isLessThanOrEqualTo: DateFormat('MM_dd_yyyy').format(
+                  DateTime(currentYear, currentMonth, 31))) // End of the year
+          .get();
+
+      final querySnapshot = await yearlyAttendanceRef;
+
+      // Loop through the entire year’s attendance and calculate total worked hours
+      for (var doc in querySnapshot.docs) {
+        final data = doc.data();
+        final timeIn = (data['timeIn'] as Timestamp?)?.toDate();
+        final timeOut = (data['timeOut'] as Timestamp?)?.toDate();
+
+        // Calculate worked hours if both timeIn and timeOut exist
+        if (timeIn != null && timeOut != null) {
+          final workedDuration = timeOut.difference(timeIn);
+          final workedHours = workedDuration.inHours +
+              (workedDuration.inMinutes.remainder(60) / 60);
+          totalMonthlyHours += workedHours;
+        }
+      }
+
+      // Store the total yearly hours for the user
+      monthlyWorkHours[rfid] = totalMonthlyHours;
     }
   } catch (e) {
     debugPrint('Error fetching monthly attendance data: $e');
@@ -181,52 +242,56 @@ Future<void> fetchYearlyAttendanceData() async {
     final currentYear =
         DateTime.now().year; // Dynamically determine the current year
 
-    for (var user in users) {
-      final userId = user['rfid'];
+    for (var user in numberOfUsers) {
+      final rfid = user['rfid'];
       double totalYearlyHours = 0;
 
-      // Iterate over each month of the current year
-      for (int month = 1; month <= 12; month++) {
-        final monthDate = DateTime(currentYear, month, 1);
-        final monthYear =
-            DateFormat('MMM_yyyy').format(monthDate); // Example: Dec_2024
+      // Query attendance records for the user across the entire year by date range
+      final yearlyAttendanceRef = firestore
+          .collection('user_attendance')
+          .where('rfid', isEqualTo: rfid) // Filter by rfid
+          .where('date',
+              isGreaterThanOrEqualTo: DateFormat('MM_dd_yyyy')
+                  .format(DateTime(currentYear, 1, 1))) // Start of the year
+          .where('date',
+              isLessThanOrEqualTo: DateFormat('MM_dd_yyyy')
+                  .format(DateTime(currentYear, 12, 31))) // End of the year
+          .get();
 
-        // Reference the user's total hours document for the specific month
-        final totalHoursRef = firestore
-            .collection('attendances')
-            .doc(monthYear) // Collection for the current month/year
-            .collection('total_hours') // Separate collection for total hours
-            .doc(userId); // Document for the specific user (RFID)
+      final querySnapshot = await yearlyAttendanceRef;
 
-        final totalHoursDoc = await totalHoursRef.get();
+      // Loop through the entire year’s attendance and calculate total worked hours
+      for (var doc in querySnapshot.docs) {
+        final data = doc.data();
+        final timeIn = (data['timeIn'] as Timestamp?)?.toDate();
+        final timeOut = (data['timeOut'] as Timestamp?)?.toDate();
 
-        if (totalHoursDoc.exists) {
-          final data = totalHoursDoc.data();
-          final totalHours = data?['totalHours'] ?? 0.0;
-
-          // Add the total monthly hours to the yearly total
-          totalYearlyHours += totalHours;
-        } else {
-          debugPrint('No total hours data for user $userId in $monthYear');
+        // Calculate worked hours if both timeIn and timeOut exist
+        if (timeIn != null && timeOut != null) {
+          final workedDuration = timeOut.difference(timeIn);
+          final workedHours = workedDuration.inHours +
+              (workedDuration.inMinutes.remainder(60) / 60);
+          totalYearlyHours += workedHours;
         }
       }
 
-      // Update yearlyWorkHours for the user
-
-      yearlyWorkHours[userId] = totalYearlyHours;
+      // Store the total yearly hours for the user
+      yearlyWorkHours[rfid] = totalYearlyHours;
     }
-    isLoading = false;
-    // Set loading state to false
+
+    isLoading = false; // Set loading state to false
   } catch (e) {
     debugPrint('Error fetching yearly attendance data: $e');
   }
 }
 
-  /*  Future<void> _fetchAttendance() async {
+
+
+/*  Future<void> _fetchAttendance() async {
     await fetchAttendanceData();
   } */
 
-  /* Future<void> fetchYearlyAttendanceData() async {
+/* Future<void> fetchYearlyAttendanceData() async {
     try {
       final currentYear =
           DateTime.now().year; // Dynamically determine the current year

@@ -50,6 +50,8 @@ dependencies:
   printing: ^5.12.0
   shimmer_animation: ^2.1.0+1
   image_picker: ^1.1.2
+  window_manager: ^0.4.3
+  font_awesome_flutter: ^10.8.0
 
 dev_dependencies:
   flutter_test:
@@ -76,6 +78,7 @@ flutter:
   assets:
     - lib/assets/images/
     - lib/assets/images/profile/
+    - lib/assets/images/medal/
     - lib/assets/data/
 
   # An image asset can refer to one or more resolution-specific "variants", see

@@ -141,180 +141,194 @@ class _SettingsPageState extends State<SettingsPage> {
               Flexible(
                 flex: 1,
                 child: SizedBox(
-                  height: MediaQuery.sizeOf(context).height / 1.1,
+                  height: MediaQuery.sizeOf(context).height / 1.2,
                   child: Card(
                     margin: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                     elevation: 4,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                           vertical: 20.0, horizontal: 40),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Stack(
                         children: [
-                          Center(
-                            child: Text(
-                              "Update Account",
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          SizedBox(height: 30),
-                          Text(
-                            'Email',
-                            style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold),
-                          ),
-                          SizedBox(height: 10),
-                          TextField(
-                            controller: _emailController,
-                            decoration: InputDecoration(
-                                labelText: 'Enter your email',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(25),
-                                ),
-                                suffix: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10),
-                                  child: DropdownButton<String>(
-                                    isDense: true,
-                                    borderRadius: BorderRadius.circular(20),
-                                    focusColor: Colors.transparent,
-                                    underline: Container(),
-                                    value: _selectedDomain,
-                                    icon: Icon(Icons.arrow_drop_down),
-                                    onChanged: (String? newValue) {
-                                      setState(() {
-                                        _selectedDomain = newValue!;
-                                      });
-                                    },
-                                    items: _emailDomains
-                                        .map<DropdownMenuItem<String>>(
-                                            (String value) {
-                                      return DropdownMenuItem<String>(
-                                        value: value,
-                                        child: Text(value),
-                                      );
-                                    }).toList(),
+                          Positioned.fill(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Center(
+                                  child: Text(
+                                    "Update Account",
+                                    style: TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
-                                contentPadding:
-                                    EdgeInsets.symmetric(horizontal: 20)),
-                            keyboardType: TextInputType.emailAddress,
-                            onChanged: (value) {
-                              if (value.isNotEmpty) {
-                                _emailController.text = value + _selectedDomain;
-                              }
-                            },
-                          ),
-                          SizedBox(height: 20),
-                          Text(
-                            'Username',
-                            style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold),
-                          ),
-                          SizedBox(height: 10),
-                          TextField(
-                            controller: _usernameController,
-                            decoration: InputDecoration(
-                                labelText: 'Enter new username',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(25),
+                                SizedBox(height: 30),
+                                Text(
+                                  'Email',
+                                  style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold),
                                 ),
-                                contentPadding:
-                                    EdgeInsets.symmetric(horizontal: 20)),
-                            keyboardType: TextInputType.emailAddress,
-                          ),
-                          SizedBox(height: 20),
-                          Text(
-                            'Update Password',
-                            style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold),
-                          ),
-                          SizedBox(height: 10),
-                          TextField(
-                            controller: _passwordController,
-                            obscureText: true,
-                            decoration: InputDecoration(
-                                labelText: 'Enter new password',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(25),
+                                SizedBox(height: 20),
+                                TextField(
+                                  controller: _emailController,
+                                  decoration: InputDecoration(
+                                      labelText: 'Enter your email',
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(25),
+                                      ),
+                                      suffix: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 10),
+                                        child: DropdownButton<String>(
+                                          isDense: true,
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                          focusColor: Colors.transparent,
+                                          underline: Container(),
+                                          value: _selectedDomain,
+                                          icon: Icon(Icons.arrow_drop_down),
+                                          onChanged: (String? newValue) {
+                                            setState(() {
+                                              _selectedDomain = newValue!;
+                                            });
+                                          },
+                                          items: _emailDomains
+                                              .map<DropdownMenuItem<String>>(
+                                                  (String value) {
+                                            return DropdownMenuItem<String>(
+                                              value: value,
+                                              child: Text(value),
+                                            );
+                                          }).toList(),
+                                        ),
+                                      ),
+                                      contentPadding: EdgeInsets.symmetric(
+                                          horizontal: 20, vertical: 20)),
+                                  keyboardType: TextInputType.emailAddress,
+                                  onChanged: (value) {
+                                    if (value.isNotEmpty) {
+                                      _emailController.text =
+                                          value + _selectedDomain;
+                                    }
+                                  },
                                 ),
-                                contentPadding:
-                                    EdgeInsets.symmetric(horizontal: 20)),
-                            keyboardType: TextInputType.emailAddress,
-                          ),
-                          SizedBox(height: 16),
-                          TextField(
-                            controller: _confirmPasswordController,
-                            obscureText: true,
-                            decoration: InputDecoration(
-                                labelText: 'Confirm password',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(25),
+                                SizedBox(height: 30),
+                                Text(
+                                  'Username',
+                                  style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold),
                                 ),
-                                contentPadding:
-                                    EdgeInsets.symmetric(horizontal: 20)),
-                            keyboardType: TextInputType.emailAddress,
-                          ),
-                          SizedBox(height: 32),
-                          Align(
-                            alignment: Alignment.bottomRight,
-                            child: ElevatedButton(
-                              onPressed: () async {
-                                String username = _usernameController.text;
-                                String password = _passwordController.text;
-                                String confirmPassword =
-                                    _confirmPasswordController.text;
-                                String email = _emailController.text;
-
-                                // Validation logic
-                                if (email.isEmpty ||
-                                    !RegExp(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$")
-                                        .hasMatch(email)) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    snackBarFailed(
-                                        'Please enter a valid email address',
-                                        context),
-                                  );
-                                  return;
-                                }
-                                if (username.isEmpty ||
-                                    !RegExp(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$")
-                                        .hasMatch(email)) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    snackBarFailed(
-                                        'Please enter a valid username',
-                                        context),
-                                  );
-                                  return;
-                                }
-
-                                if (password != confirmPassword) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    snackBarSuccess(
-                                        'Passwords do not match!', context),
-                                  );
-                                  return;
-                                }
-
-                                // Hash the password
-                                String hashedPassword = _hashPassword(password);
-                                if (password.isEmpty) {
-                                  hashedPassword = globalPassword;
-                                }
-                                // Update the Firestore document
-                                await _updateAdminAccount(
-                                    username, hashedPassword, email);
-                              },
-                              child: Text('Save Changes'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.greenAccent,
-                                foregroundColor: Colors.white,
-                              ),
+                                SizedBox(height: 20),
+                                TextField(
+                                  controller: _usernameController,
+                                  decoration: InputDecoration(
+                                      labelText: 'Enter new username',
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(25),
+                                      ),
+                                      contentPadding: EdgeInsets.symmetric(
+                                          horizontal: 20, vertical: 20)),
+                                  keyboardType: TextInputType.emailAddress,
+                                ),
+                                SizedBox(height: 30),
+                                Text(
+                                  'Update Password',
+                                  style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                SizedBox(height: 20),
+                                TextField(
+                                  controller: _passwordController,
+                                  obscureText: true,
+                                  decoration: InputDecoration(
+                                      labelText: 'Enter new password',
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(25),
+                                      ),
+                                      contentPadding: EdgeInsets.symmetric(
+                                          horizontal: 20, vertical: 20)),
+                                  keyboardType: TextInputType.emailAddress,
+                                ),
+                                SizedBox(height: 20),
+                                TextField(
+                                  controller: _confirmPasswordController,
+                                  obscureText: true,
+                                  decoration: InputDecoration(
+                                      labelText: 'Confirm password',
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(25),
+                                      ),
+                                      contentPadding: EdgeInsets.symmetric(
+                                          horizontal: 20, vertical: 20)),
+                                  keyboardType: TextInputType.emailAddress,
+                                ),
+                                SizedBox(height: 32),
+                              ],
                             ),
                           ),
+                          Positioned(
+                            child: Align(
+                              alignment: Alignment.bottomRight,
+                              child: ElevatedButton(
+                                onPressed: () async {
+                                  String username = _usernameController.text;
+                                  String password = _passwordController.text;
+                                  String confirmPassword =
+                                      _confirmPasswordController.text;
+                                  String email = _emailController.text;
+
+                                  // Validation logic
+                                  if (email.isEmpty ||
+                                      !RegExp(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$")
+                                          .hasMatch(email)) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      snackBarFailed(
+                                          'Please enter a valid email address',
+                                          context),
+                                    );
+                                    return;
+                                  }
+                                  if (username.isEmpty ||
+                                      !RegExp(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$")
+                                          .hasMatch(email)) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      snackBarFailed(
+                                          'Please enter a valid username',
+                                          context),
+                                    );
+                                    return;
+                                  }
+
+                                  if (password != confirmPassword) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      snackBarSuccess(
+                                          'Passwords do not match!', context),
+                                    );
+                                    return;
+                                  }
+
+                                  // Hash the password
+                                  String hashedPassword =
+                                      _hashPassword(password);
+                                  if (password.isEmpty) {
+                                    hashedPassword = globalPassword;
+                                  }
+                                  // Update the Firestore document
+                                  await _updateAdminAccount(
+                                      username, hashedPassword, email);
+                                },
+                                child: Text('Save Changes'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.greenAccent,
+                                  foregroundColor: Colors.white,
+                                ),
+                              ),
+                            ),
+                          )
                         ],
                       ),
                     ),
@@ -324,7 +338,7 @@ class _SettingsPageState extends State<SettingsPage> {
               Flexible(
                 flex: 1,
                 child: SizedBox(
-                  height: MediaQuery.sizeOf(context).height / 1.1,
+                  height: MediaQuery.sizeOf(context).height / 1.2,
                   child: Card(
                     margin: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                     shape: RoundedRectangleBorder(
@@ -332,92 +346,102 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                     elevation: 4,
                     child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 20.0, horizontal: 20),
+                      child: Stack(
                         children: [
-                          Center(
-                            child: Text(
-                              "Create Announcement",
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          SizedBox(height: 30),
-                          TextField(
-                            controller: _titleController,
-                            keyboardType: TextInputType.text,
-                            textCapitalization: TextCapitalization.sentences,
-                            decoration: InputDecoration(
-                              labelText: 'Title',
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          TextField(
-                            controller: _announcementController,
-                            maxLines: 11,
-                            decoration: InputDecoration(
-                              labelText: 'Announcement',
-                              alignLabelWithHint: true,
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Text('View date:'),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: [
-                              TextButton(
-                                onPressed: () =>
-                                    _pickDate(context, isStartDate: true),
-                                child: Text(
-                                  "Start Date: ${_startDate != null ? _startDate!.toLocal().toString().split(' ')[0] : 'Select'}",
-                                ),
-                              ),
-                              Text('To'),
-                              TextButton(
-                                onPressed: () =>
-                                    _pickDate(context, isStartDate: false),
-                                child: Text(
-                                  "End Date: ${_endDate != null ? _endDate.toString().split(' ')[0] : 'Select'}",
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Flex(
-                            direction: Axis.horizontal,
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Align(
-                                alignment: Alignment.bottomLeft,
-                                child: ElevatedButton(
-                                  onPressed: () {
-                                    showManageDialog(context);
-                                  },
-                                  child: Text('Manage'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.redAccent,
-                                    foregroundColor: Colors.white,
+                          Positioned.fill(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Center(
+                                  child: Text(
+                                    "Create Announcement",
+                                    style: TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              Align(
-                                alignment: Alignment.bottomRight,
-                                child: ElevatedButton(
-                                  onPressed: _postAnnouncement,
-                                  child: Text('Post Announcement'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.greenAccent,
-                                    foregroundColor: Colors.black,
+                                SizedBox(height: 30),
+                                TextField(
+                                  controller: _titleController,
+                                  keyboardType: TextInputType.text,
+                                  textCapitalization:
+                                      TextCapitalization.sentences,
+                                  decoration: InputDecoration(
+                                    labelText: 'Title',
+                                    border: OutlineInputBorder(),
                                   ),
                                 ),
-                              ),
-                            ],
+                                const SizedBox(height: 16),
+                                TextField(
+                                  controller: _announcementController,
+                                  maxLines: 15,
+                                  decoration: InputDecoration(
+                                    labelText: 'Announcement',
+                                    alignLabelWithHint: true,
+                                    border: OutlineInputBorder(),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Text('View date:'),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  children: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          _pickDate(context, isStartDate: true),
+                                      child: Text(
+                                        "Start Date: ${_startDate != null ? _startDate!.toLocal().toString().split(' ')[0] : 'Select'}",
+                                      ),
+                                    ),
+                                    Text('To'),
+                                    TextButton(
+                                      onPressed: () => _pickDate(context,
+                                          isStartDate: false),
+                                      child: Text(
+                                        "End Date: ${_endDate != null ? _endDate.toString().split(' ')[0] : 'Select'}",
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                              ],
+                            ),
                           ),
+                          Positioned(
+                            child: Flex(
+                              direction: Axis.horizontal,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Align(
+                                  alignment: Alignment.bottomLeft,
+                                  child: ElevatedButton(
+                                    onPressed: () {
+                                      showManageDialog(context);
+                                    },
+                                    child: Text('Manage'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.redAccent,
+                                      foregroundColor: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                                Align(
+                                  alignment: Alignment.bottomRight,
+                                  child: ElevatedButton(
+                                    onPressed: _postAnnouncement,
+                                    child: Text('Post Announcement'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.greenAccent,
+                                      foregroundColor: Colors.black,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
                         ],
                       ),
                     ),

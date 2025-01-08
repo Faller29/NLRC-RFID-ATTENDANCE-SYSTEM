@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:nlrc_rfid_scanner/assets/themeData.dart';
 import 'package:nlrc_rfid_scanner/backend/data/fetch_data.dart';
@@ -50,13 +51,43 @@ class _ScannedModalState extends State<ScannedModal> {
 
     if (timeIn != null && timeIn.isNotEmpty) {
       // Display the timeIn if it exists and disable the dropdown button
-      _selectedJobType = null; // Optionally disable job type selection
+      _selectedJobType = matchedAttendance[
+          'officeType']; // Optionally disable job type selection
     } else {
       timeIn = '--:-- --';
       timeOut = '--:-- --';
     }
     if (timeOut == null || timeIn.isEmpty) {
       timeOut = '--:-- --';
+    }
+    double screenWidth = MediaQuery.of(context).size.width;
+
+    // Adjust margins based on screen width
+    EdgeInsets cardMargin;
+    if (screenWidth >= 1500 && screenWidth <= 1600) {
+      cardMargin = EdgeInsets.symmetric(
+        horizontal: screenWidth * 0.31,
+      );
+      print(cardMargin);
+      print(screenWidth);
+    } else if (screenWidth >= 1601 && screenWidth <= 1700) {
+      cardMargin = EdgeInsets.symmetric(
+        horizontal: screenWidth * 0.32,
+      );
+      print(cardMargin);
+      print(screenWidth);
+    } else if (screenWidth >= 1701) {
+      cardMargin = EdgeInsets.symmetric(
+        horizontal: screenWidth * 0.33,
+      );
+      print(cardMargin);
+      print(screenWidth);
+    } else {
+      cardMargin = EdgeInsets.symmetric(
+        horizontal: screenWidth * 0.3,
+      );
+      print(cardMargin);
+      print(screenWidth);
     }
 
     return Scaffold(
@@ -66,9 +97,7 @@ class _ScannedModalState extends State<ScannedModal> {
           Center(
             child: Card(
               color: Color.fromARGB(255, 234, 235, 250),
-              margin: EdgeInsets.symmetric(
-                  horizontal: MediaQuery.of(context).size.width * 0.25,
-                  vertical: MediaQuery.of(context).size.height * 0.2),
+              margin: cardMargin,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(15),
               ),
@@ -294,8 +323,59 @@ class _ScannedModalState extends State<ScannedModal> {
                               )
                             ],
                           ),
-                          if (matchedAttendance == null ||
-                              matchedAttendance.isEmpty)
+
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Field type:',
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16),
+                                ),
+                                SizedBox(
+                                  width: 20,
+                                ),
+                                DropdownButton<String>(
+                                  value: _selectedJobType,
+                                  focusColor: Colors.transparent,
+                                  icon: Icon(
+                                    Icons.arrow_drop_down,
+                                    color: Colors.black,
+                                  ),
+                                  underline: Container(),
+                                  items: _jobTypes.map((String type) {
+                                    return DropdownMenuItem<String>(
+                                      value: type,
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 12.0, horizontal: 16.0),
+                                        child: Text(type),
+                                      ),
+                                    );
+                                  }).toList(),
+                                  onChanged: (matchedAttendance == null ||
+                                          matchedAttendance.isEmpty)
+                                      ? (String? newValue) {
+                                          setState(() {
+                                            _selectedJobType = newValue;
+                                          });
+                                        }
+                                      : null,
+                                  hint: const Text(
+                                    'Select Job Type',
+                                    style: TextStyle(
+                                        color: Color.fromARGB(255, 116, 1, 1),
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          /* else
                             Padding(
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 20),
@@ -329,11 +409,7 @@ class _ScannedModalState extends State<ScannedModal> {
                                         ),
                                       );
                                     }).toList(),
-                                    onChanged: (String? newValue) {
-                                      setState(() {
-                                        _selectedJobType = newValue;
-                                      });
-                                    },
+                                    onChanged: null,
                                     hint: const Text(
                                       'Select job type',
                                       style: TextStyle(
@@ -343,16 +419,26 @@ class _ScannedModalState extends State<ScannedModal> {
                                   ),
                                 ],
                               ),
-                            ),
+                            ), */
+                          //SizedBox(height: 50),
                           const SizedBox(height: 10),
+
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
-                              TextButton(
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.redAccent),
                                 onPressed: () {
                                   Navigator.of(context).pop(); // Close modal
                                 },
-                                child: const Text('Cancel'),
+                                child: const Text(
+                                  'Cancel',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
                               ElevatedButton(
                                 style: ElevatedButton.styleFrom(
@@ -392,11 +478,15 @@ class _ScannedModalState extends State<ScannedModal> {
                                 },
                                 child: const Text(
                                   'Submit',
-                                  style: TextStyle(color: Colors.white),
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ],
                           ),
+                          const SizedBox(height: 10),
                         ],
                       ),
                     ),
@@ -414,6 +504,9 @@ class _ScannedModalState extends State<ScannedModal> {
                   children: [
                     CircularProgressIndicator(
                       color: Colors.white,
+                    ),
+                    SizedBox(
+                      height: 10,
                     ),
                     Text(
                       'Saving Attendance',
@@ -434,48 +527,52 @@ class _ScannedModalState extends State<ScannedModal> {
   Future<ScaffoldFeatureController<SnackBar, SnackBarClosedReason>>
       _saveAttendance() async {
     try {
-      final userId = widget.rfidData; // Assuming RFID is unique to the user
-      final today = widget.timestamp; // Use the timestamp passed to the modal
-      final monthYear =
-          DateFormat('MMM_yyyy').format(today); // Get current month and year
-      final day = DateFormat('dd').format(today); // Get the day
+      final rfid = widget.rfidData; // RFID unique to the user
+      final todayDate = DateFormat('MM_dd_yyyy').format(DateTime.now());
 
-      // Reference to the day's attendance document
+      // Reference to the attendance document for the user today
       final attendanceRef = firestore
-          .collection('attendances')
-          .doc(monthYear) // Collection for the current month/year
-          .collection(day) // Subcollection for the current day
-          .doc(userId); // Document for the specific user (RFID)
+          .collection('user_attendance')
+          .where('rfid', isEqualTo: rfid) // Query by RFID
+          .where('date', isEqualTo: todayDate) // Search by date field
+          .limit(
+              1); // Limit to one document since we are working with unique data
 
-      final attendanceDoc = await attendanceRef.get();
+      final querySnapshot = await attendanceRef.get();
 
-      if (!attendanceDoc.exists) {
+      if (querySnapshot.docs.isEmpty) {
         // First scan, save as Time In
-        await attendanceRef.set({
+        final newAttendanceRef = firestore
+            .collection(
+                'user_attendance') // Use the 'user_attendance' collection
+            .doc();
+
+        await newAttendanceRef.set({
+          'rfid': rfid,
           'name': widget.userData['name'],
-          'officeType': _selectedJobType, //widget.userData['office'],
+          'officeType': _selectedJobType,
           'timeIn': widget.timestamp, // Use the timestamp passed to the modal
           'timeOut': null,
+          'date': todayDate, // Store the date as well
         });
 
         await fetchAttendance();
         attendance = await loadAttendance();
       } else {
         // If Time In exists, check Time Out before updating
-        final data = attendanceDoc.data();
-        final timeIn = (data?['timeIn'] as Timestamp?)?.toDate();
-        final timeOut = (data?['timeOut'] as Timestamp?)?.toDate();
+        final data = querySnapshot.docs.first.data();
+        final timeIn = (data['timeIn'] as Timestamp?)?.toDate();
+        final timeOut = (data['timeOut'] as Timestamp?)?.toDate();
 
         // Check if Time Out already exists
         if (timeOut != null) {
           // Show a Snackbar and prevent overwriting
-
           return ScaffoldMessenger.of(context).showSnackBar(
             snackBarFailed(
               'Time Out has already been recorded.',
               context,
             ),
-          ); // Prevent overwriting Time Out
+          );
         }
 
         // Otherwise, check the time difference constraint before updating Time Out
@@ -485,47 +582,56 @@ class _ScannedModalState extends State<ScannedModal> {
         if (timeIn != null) {
           final workedDuration = newTimeOut.difference(timeIn);
 
-          // Check if workedDuration is greater than 30 minutes
+          // Check if workedDuration is greater than 60 minutes
           if (workedDuration.inMinutes < 60) {
-            // Show a Snackbar if the difference is less than 30 minutes
-
+            // Show a Snackbar if the difference is less than 60 minutes
             return ScaffoldMessenger.of(context).showSnackBar(
               snackBarFailed(
-                'Time Out cannot be recorded before 30 minutes of work.',
+                'Time Out cannot be recorded before 60 minutes of work.',
                 context,
               ),
-            ); // Prevent Time Out
+            );
           }
 
           final workedHours = workedDuration.inHours +
               (workedDuration.inMinutes.remainder(60) / 60);
 
           // Update the Time Out for the day
-          await attendanceRef.update({
+          await querySnapshot.docs.first.reference.update({
             'timeOut': newTimeOut,
           });
 
           // Now update the total hours in a separate collection
           final totalHoursRef = firestore
-              .collection('attendances')
-              .doc(monthYear) // Document for the month
-              .collection('total_hours') // Separate collection for total hours
-              .doc(userId); // Document for the user (RFID)
+              .collection(
+                  'user_total_hours') // Use the 'user_total_hours' collection
+              .where('rfid', isEqualTo: rfid) // Query by RFID
+              .where('date',
+                  isEqualTo: DateFormat('MMM_yyyy').format(DateTime.now()))
+              .limit(
+                  1); // Limit to 1 document since we are working with unique date
 
-          // Check if the totalHours document exists for the user
-          final totalHoursDoc = await totalHoursRef.get();
+          // Await the query result before accessing docs
+          final totalHoursSnapshot = await totalHoursRef.get();
 
-          if (totalHoursDoc.exists) {
-            // If exists, increment the total hours for that user in the month
-            await totalHoursRef.update({
-              'totalHours': FieldValue.increment(workedHours),
+          if (totalHoursSnapshot.docs.isNotEmpty) {
+            // If total hours document exists, increment the total hours for that user in the month
+            final totalHoursDoc = totalHoursSnapshot.docs.first;
+            final currentTotalHours = totalHoursDoc['total_hours'] ?? 0.0;
+
+            await totalHoursDoc.reference.update({
+              'total_hours':
+                  currentTotalHours + workedHours, // Add new worked hours
             });
           } else {
             // If it doesn't exist, create the document with the worked hours
-            await totalHoursRef.set({
-              'totalHours': workedHours,
+            await firestore.collection('user_total_hours').doc().set({
+              'rfid': rfid,
+              'total_hours': workedHours,
+              'date': DateFormat('MMM_yyyy').format(DateTime.now()),
             });
           }
+
           await fetchAttendance();
           attendance = await loadAttendance();
         }

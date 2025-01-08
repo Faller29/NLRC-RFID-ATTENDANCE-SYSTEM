@@ -12,12 +12,13 @@ import 'package:nlrc_rfid_scanner/backend/data/fetch_data.dart';
 import 'package:nlrc_rfid_scanner/screens/homepage.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'package:window_manager/window_manager.dart';
 
 //List<Map<String, dynamic>> localUsers = [];
 List<Map<String, dynamic>> users = [];
 List<Map<String, dynamic>> attendance = [];
 Map<String, dynamic>? adminData = {};
-Map<String, dynamic> announcement = {};
+List<Map<String, dynamic>> adminAnnouncement = [];
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,11 +28,25 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   //await fetchUsers();
+  // Initialize window manager
+  await windowManager.ensureInitialized();
+
+  // Set window options
 
   await checkConnectivity();
 
+  // Apply the options
+  windowManager.waitUntilReadyToShow(windowOptions, () async {
+    await windowManager.show();
+    await windowManager.focus();
+  });
+
   runApp(const MyApp());
 }
+
+WindowOptions windowOptions = WindowOptions(
+  minimumSize: Size(1500, 900),
+);
 
 Future<void> checkConnectivity() async {
   final result = await InternetAddress.lookup('example.com');
@@ -46,8 +61,8 @@ Future<void> checkConnectivity() async {
     await fetchAttendanceData();
     deleteExpiredAnnouncements();
   }
-  //announcement = (await loadAnnouncements())!;
-  print(announcement);
+
+  adminAnnouncement = await loadAnnouncements();
   users = await loadUsers();
   attendance = await loadAttendance();
   adminData = await loadAdmin();
