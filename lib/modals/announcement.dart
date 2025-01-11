@@ -2,6 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:nlrc_rfid_scanner/assets/themeData.dart';
+import 'package:nlrc_rfid_scanner/backend/data/fetch_attendance.dart';
+import 'package:nlrc_rfid_scanner/backend/data/fetch_data.dart';
+import 'package:nlrc_rfid_scanner/backend/data/file_reader.dart';
+import 'package:nlrc_rfid_scanner/main.dart';
 
 TextEditingController _titleController = TextEditingController();
 TextEditingController _announcementController = TextEditingController();
@@ -264,6 +268,9 @@ Future<void> _updateAnnouncement(
         .collection('announcements')
         .doc(announcementId) // Use the same document ID to update it
         .update(updatedAnnouncement);
+    await fetchAnnouncements();
+    adminAnnouncement = await loadAnnouncements();
+
     ScaffoldMessenger.of(context).showSnackBar(
       snackBarSuccess('Announcement updated successfully', context),
     );
@@ -281,6 +288,9 @@ void _deleteAnnouncement(BuildContext context, String announcementId) async {
         .collection('announcements')
         .doc(announcementId)
         .delete();
+    await fetchAnnouncements();
+    adminAnnouncement = await loadAnnouncements();
+
     ScaffoldMessenger.of(context).showSnackBar(
       snackBarSuccess(
           'content: Text(' 'Announcement deleted successfully', context),

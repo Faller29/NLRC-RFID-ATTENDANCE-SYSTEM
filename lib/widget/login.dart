@@ -16,7 +16,7 @@ class LoginWidget extends StatefulWidget {
 class _LoginWidgetState extends State<LoginWidget> {
   TextEditingController username = TextEditingController();
   TextEditingController password = TextEditingController();
-
+  bool _isPasswordVisible = false;
   // Hash the input password using SHA-256
   String _hashPassword(String inputPassword) {
     return sha256.convert(utf8.encode(inputPassword)).toString();
@@ -72,74 +72,82 @@ class _LoginWidgetState extends State<LoginWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: EdgeInsets.symmetric(
-        horizontal: MediaQuery.sizeOf(context).width * 0.36,
-        //vertical: MediaQuery.sizeOf(context).height * 0.3,
-      ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Admin Log in',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+    return AlertDialog(
+      backgroundColor: Colors.transparent,
+      shadowColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
+      content: Card(
+        /* margin: EdgeInsets.symmetric(
+          horizontal: MediaQuery.sizeOf(context).width * 0.36,
+          vertical: MediaQuery.sizeOf(context).height * 0.3,
+        ), */
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Admin Log in',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            SizedBox(height: 20),
-            _buildTextField('Username', username),
-            SizedBox(height: 10),
-            _buildTextField('Password', password),
-            SizedBox(height: 30),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.redAccent,
-                    foregroundColor: Colors.white,
+              SizedBox(height: 20),
+              _buildTextField('Username', username),
+              SizedBox(height: 10),
+              _buildTextField('Password', password),
+              SizedBox(height: 30),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.redAccent,
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    child: Text(
+                      'Cancel',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child: Text(
-                    'Cancel',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                  SizedBox(
+                    width: 100,
                   ),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.greenAccent,
-                    foregroundColor: Color.fromARGB(255, 60, 45, 194),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.greenAccent,
+                      foregroundColor: Color.fromARGB(255, 60, 45, 194),
+                    ),
+                    onPressed: () {
+                      _validateLogin(context);
+                    },
+                    child: Row(
+                      children: [
+                        Icon(
+                          FontAwesomeIcons.unlock,
+                          color: Color.fromARGB(255, 60, 45, 194),
+                          size: 15,
+                        ),
+                        SizedBox(
+                          width: 5,
+                        ),
+                        Text(
+                          'Log in',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
                   ),
-                  onPressed: () {
-                    _validateLogin(context);
-                  },
-                  child: Row(
-                    children: [
-                      Icon(
-                        FontAwesomeIcons.unlock,
-                        color: Color.fromARGB(255, 60, 45, 194),
-                        size: 15,
-                      ),
-                      SizedBox(
-                        width: 5,
-                      ),
-                      Text(
-                        'Log in',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -150,7 +158,8 @@ class _LoginWidgetState extends State<LoginWidget> {
       padding: const EdgeInsets.only(bottom: 10),
       child: TextField(
         controller: controller,
-        obscureText: label == 'Password', // Hide text for password field
+        obscureText:
+            label == 'Password' && !_isPasswordVisible, // Toggle visibility
         decoration: InputDecoration(
           prefixIcon: label == 'Password'
               ? Icon(
@@ -159,6 +168,20 @@ class _LoginWidgetState extends State<LoginWidget> {
               : Icon(
                   IconlyLight.profile,
                 ),
+          suffixIcon: label == 'Password'
+              ? IconButton(
+                  icon: Icon(
+                    _isPasswordVisible
+                        ? Icons.visibility
+                        : Icons.visibility_off,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _isPasswordVisible = !_isPasswordVisible;
+                    });
+                  },
+                )
+              : null,
           labelStyle: TextStyle(fontWeight: FontWeight.bold, height: 0.5),
           labelText: label,
           hintText: 'Enter $label',

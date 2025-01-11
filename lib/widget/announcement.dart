@@ -11,17 +11,16 @@ class AnnouncementsWidget extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+        SizedBox(height: 10),
         Text(
           'Announcements',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color:
-                Colors.white, // Ensure the text is black or any desired color
-            decoration: TextDecoration.none, // Remove any underline
+            color: Colors.white,
+            decoration: TextDecoration.none,
           ),
         ),
-        SizedBox(height: 10),
         Expanded(
           child: ListView.builder(
             itemCount: announcements.length,
@@ -32,23 +31,30 @@ class AnnouncementsWidget extends StatelessWidget {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
-                elevation: 3,
+                elevation: 20,
+                color: Color.fromARGB(255, 44, 15, 148),
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        announcement['title'] ?? 'No Title',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                      Center(
+                        child: Text(
+                          announcement['title'] ?? 'No Title',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                       SizedBox(height: 8),
                       Text(
                         announcement['announcement'] ?? 'No Announcement',
-                        style: TextStyle(fontSize: 16),
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.white,
+                        ),
                       ),
                       SizedBox(height: 8),
                       Row(

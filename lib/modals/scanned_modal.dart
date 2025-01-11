@@ -31,7 +31,7 @@ class ScannedModal extends StatefulWidget {
 
 class _ScannedModalState extends State<ScannedModal> {
   String? _selectedJobType;
-  final List<String> _jobTypes = ['Office', 'On the Business'];
+  final List<String> _jobTypes = ['Office', 'Official Business'];
 
   bool _isTimeInRecorded = false; // Flag to check if Time In is recorded
   DateTime? _timeIn;
@@ -60,44 +60,17 @@ class _ScannedModalState extends State<ScannedModal> {
     if (timeOut == null || timeIn.isEmpty) {
       timeOut = '--:-- --';
     }
-    double screenWidth = MediaQuery.of(context).size.width;
 
-    // Adjust margins based on screen width
-    EdgeInsets cardMargin;
-    if (screenWidth >= 1500 && screenWidth <= 1600) {
-      cardMargin = EdgeInsets.symmetric(
-        horizontal: screenWidth * 0.31,
-      );
-      print(cardMargin);
-      print(screenWidth);
-    } else if (screenWidth >= 1601 && screenWidth <= 1700) {
-      cardMargin = EdgeInsets.symmetric(
-        horizontal: screenWidth * 0.32,
-      );
-      print(cardMargin);
-      print(screenWidth);
-    } else if (screenWidth >= 1701) {
-      cardMargin = EdgeInsets.symmetric(
-        horizontal: screenWidth * 0.33,
-      );
-      print(cardMargin);
-      print(screenWidth);
-    } else {
-      cardMargin = EdgeInsets.symmetric(
-        horizontal: screenWidth * 0.3,
-      );
-      print(cardMargin);
-      print(screenWidth);
-    }
-
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Stack(
-        children: [
-          Center(
+    return Stack(
+      children: [
+        AlertDialog(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          surfaceTintColor: Colors.transparent,
+          content: Center(
             child: Card(
               color: Color.fromARGB(255, 234, 235, 250),
-              margin: cardMargin,
+              // margin: cardMargin,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(15),
               ),
@@ -133,6 +106,9 @@ class _ScannedModalState extends State<ScannedModal> {
                                   height: 70,
                                   width: 70,
                                 ),
+                                SizedBox(
+                                  width: 40,
+                                ),
                                 const Column(
                                   children: [
                                     Text(
@@ -154,6 +130,9 @@ class _ScannedModalState extends State<ScannedModal> {
                                       ),
                                     ),
                                   ],
+                                ),
+                                SizedBox(
+                                  width: 40,
                                 ),
                                 Image.asset(
                                   'lib/assets/images/bagongPilipinas.png',
@@ -376,50 +355,50 @@ class _ScannedModalState extends State<ScannedModal> {
                             ),
                           ),
                           /* else
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 20),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Field type:',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                  SizedBox(
-                                    width: 20,
-                                  ),
-                                  DropdownButton<String>(
-                                    value: _selectedJobType,
-                                    focusColor: Colors.transparent,
-                                    icon: Icon(
-                                      Icons.arrow_drop_down,
-                                      color: Colors.black,
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 20),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Field type:',
+                                      style:
+                                          TextStyle(fontWeight: FontWeight.bold),
                                     ),
-                                    underline: Container(),
-                                    items: _jobTypes.map((String type) {
-                                      return DropdownMenuItem<String>(
-                                        value: type,
-                                        child: Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                              vertical: 12.0, horizontal: 16.0),
-                                          child: Text(type),
-                                        ),
-                                      );
-                                    }).toList(),
-                                    onChanged: null,
-                                    hint: const Text(
-                                      'Select job type',
-                                      style: TextStyle(
-                                          color: Color.fromARGB(255, 116, 1, 1),
-                                          fontWeight: FontWeight.bold),
+                                    SizedBox(
+                                      width: 20,
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ), */
+                                    DropdownButton<String>(
+                                      value: _selectedJobType,
+                                      focusColor: Colors.transparent,
+                                      icon: Icon(
+                                        Icons.arrow_drop_down,
+                                        color: Colors.black,
+                                      ),
+                                      underline: Container(),
+                                      items: _jobTypes.map((String type) {
+                                        return DropdownMenuItem<String>(
+                                          value: type,
+                                          child: Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical: 12.0, horizontal: 16.0),
+                                            child: Text(type),
+                                          ),
+                                        );
+                                      }).toList(),
+                                      onChanged: null,
+                                      hint: const Text(
+                                        'Select job type',
+                                        style: TextStyle(
+                                            color: Color.fromARGB(255, 116, 1, 1),
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ), */
                           //SizedBox(height: 50),
                           const SizedBox(height: 10),
 
@@ -495,32 +474,34 @@ class _ScannedModalState extends State<ScannedModal> {
               ),
             ),
           ),
-          if (isLoading)
-            Container(
-              color: Color.fromARGB(255, 37, 26, 196).withOpacity(0.3),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(
+        ),
+        if (isLoading)
+          Container(
+            color: Color.fromARGB(255, 37, 26, 196).withOpacity(0.3),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    color: Colors.white,
+                  ),
+                  SizedBox(
+                    height: 10,
+                  ),
+                  Text(
+                    'Saving Attendance',
+                    style: TextStyle(
                       color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      decoration: TextDecoration.none,
                     ),
-                    SizedBox(
-                      height: 10,
-                    ),
-                    Text(
-                      'Saving Attendance',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 

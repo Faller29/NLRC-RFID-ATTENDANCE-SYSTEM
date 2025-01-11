@@ -23,7 +23,8 @@ class _ReportPage extends State<ReportPage> {
   String? _selectedRfid; // Selected RFID for the selected name
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   DateTime selectedDate = DateTime.now();
-  DateTime selectedMonth = DateTime.now();
+  DateTime? selectedMonth;
+  DateTime? selectedDate1;
 
   DateTimeRange? selectedDateRange;
   bool isEditMode = false; // Add this state variable
@@ -286,78 +287,114 @@ class _ReportPage extends State<ReportPage> {
         return StatefulBuilder(
           builder: (BuildContext dialogContext, StateSetter setState) {
             return AlertDialog(
-              title: Center(child: const Text('Select Date Range')),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('Start Date:'),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          Color.fromRGBO(69, 90, 100, 1), // Background color
-                      foregroundColor: Colors.white, // Foreground (text) color
+              title: Center(
+                  child: const Text(
+                'Generate Workers Data',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
+              )),
+              content: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Start Date:',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color.fromRGBO(
+                                69, 90, 100, 1), // Background color
+                            foregroundColor:
+                                Colors.white, // Foreground (text) color
+                          ),
+                          onPressed: () async {
+                            final picked = await showDatePicker(
+                              context: dialogContext,
+                              initialDate: tempStart,
+                              firstDate: DateTime(2024),
+                              lastDate: DateTime.now(),
+                            );
+                            if (picked != null) {
+                              setState(() {
+                                tempStart = picked;
+                              });
+                            }
+                          },
+                          child: Text(
+                            '${tempStart.toLocal()}'.split(' ')[0],
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                        ),
+                      ],
                     ),
-                    onPressed: () async {
-                      final picked = await showDatePicker(
-                        context: dialogContext,
-                        initialDate: tempStart,
-                        firstDate: DateTime(2024),
-                        lastDate: DateTime.now(),
-                      );
-                      if (picked != null) {
-                        setState(() {
-                          tempStart = picked;
-                        });
-                      }
-                    },
-                    child: Text(
-                      '${tempStart.toLocal()}'.split(' ')[0],
-                      style: const TextStyle(fontSize: 16),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'End Date:',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color.fromRGBO(
+                                69, 90, 100, 1), // Background color
+                            foregroundColor:
+                                Colors.white, // Foreground (text) color
+                          ),
+                          onPressed: () async {
+                            final picked = await showDatePicker(
+                              context: dialogContext,
+                              initialDate: tempEnd,
+                              firstDate: DateTime(2000),
+                              lastDate: DateTime.now(),
+                            );
+                            if (picked != null) {
+                              setState(() {
+                                tempEnd = picked;
+                              });
+                            }
+                          },
+                          child: Text(
+                            '${tempEnd.toLocal()}'.split(' ')[0],
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text('End Date:'),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          Color.fromRGBO(69, 90, 100, 1), // Background color
-                      foregroundColor: Colors.white, // Foreground (text) color
-                    ),
-                    onPressed: () async {
-                      final picked = await showDatePicker(
-                        context: dialogContext,
-                        initialDate: tempEnd,
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime.now(),
-                      );
-                      if (picked != null) {
-                        setState(() {
-                          tempEnd = picked;
-                        });
-                      }
-                    },
-                    child: Text(
-                      '${tempEnd.toLocal()}'.split(' ')[0],
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               actions: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    ElevatedButton.icon(
-                      icon: Icon(Icons.close),
-                      label: Text('Close'),
+                    ElevatedButton(
+                      child: Text(
+                        'Close',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       onPressed: () => Navigator.pop(dialogContext),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blueAccent,
+                        backgroundColor: Colors.redAccent,
                         foregroundColor: Colors.white,
                         padding: EdgeInsets.symmetric(horizontal: 20),
                       ),
                     ),
-                    TextButton(
+                    ElevatedButton(
                       onPressed: () {
                         // Compare only the date parts (ignoring time)
                         if (tempStart.year == tempEnd.year &&
@@ -386,14 +423,11 @@ class _ReportPage extends State<ReportPage> {
                         foregroundColor: Colors.white,
                         padding: EdgeInsets.symmetric(horizontal: 20),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.save), // Icon added here
-                          SizedBox(
-                              width: 8), // Spacing between the icon and text
-                          Text('Save'),
-                        ],
+                      child: Text(
+                        'Save',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ],
@@ -448,6 +482,15 @@ class _ReportPage extends State<ReportPage> {
                 data['timeOut'] != null ? data['timeOut'].toDate() : null;
 
             int totalMinutes = _calculateTotalMinutes(timeIn, timeOut);
+
+            // Adjust total minutes if timeIn is before 12 PM
+            if (timeIn != null && timeIn.hour < 12) {
+              if (totalMinutes > 60) {
+                totalMinutes -= 60;
+              } else {
+                totalMinutes = 0;
+              }
+            }
 
             // If the RFID is already in the aggregated data, add their minutes
             if (aggregatedData.containsKey(rfid)) {
@@ -516,6 +559,20 @@ class _ReportPage extends State<ReportPage> {
     }
   }
 
+  Future<void> pickDate1() async {
+    final DateTime? pickedDate1 = await showDatePicker(
+      context: context,
+      initialDate: selectedDate1 ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
+    );
+    if (pickedDate1 != null && pickedDate1 != selectedDate1) {
+      setState(() {
+        selectedDate1 = pickedDate1;
+      });
+    }
+  }
+
   Future<List<Map<String, String>>> fetchAttendanceData() async {
     try {
       // Format the selectedDate to match the custom format "MM_dd_yyyy"
@@ -550,6 +607,97 @@ class _ReportPage extends State<ReportPage> {
               userData['timeOut'] != null ? userData['timeOut'].toDate() : null;
 
           int totalMinutes = _calculateTotalMinutes(timeIn, timeOut);
+          int hours = totalMinutes ~/ 60;
+          int minutes = totalMinutes % 60;
+
+          // Subtract 1 hour if timeIn is before 12 PM
+          if (timeIn != null && timeIn.hour < 12) {
+            if (hours > 1 || (hours == 1 && minutes > 0)) {
+              totalMinutes -= 60;
+              hours = totalMinutes ~/ 60;
+              minutes = totalMinutes % 60;
+            } else {
+              // Set total hours to 0 if less than 1 hour
+              hours = 0;
+              minutes = 0;
+            }
+          }
+
+          // Determine the correct singular or plural form for hours and minutes
+          String hourText = hours == 1 ? 'hour' : 'hours';
+          String minuteText = minutes == 1 ? 'minute' : 'minutes';
+
+          // Add the document's attendance data to the list
+          attendanceData.add({
+            'id': userId, // Include the document ID
+            'name': name, // Include the user's name
+            'rfid': rfid, // Include the user's RFID
+            'timeIn': timeIn != null
+                ? DateFormat('hh:mm a').format(timeIn)
+                : '', // Formatted timeIn
+            'timeOut': timeOut != null
+                ? DateFormat('hh:mm a').format(timeOut)
+                : '', // Formatted timeOut
+            'totalHours':
+                '${hours > 0 ? '$hours $hourText ' : ''}${minutes > 0 ? '$minutes $minuteText' : ''}'
+                    .trim(),
+            'date':
+                recordDate ?? '', // Directly include the document's date field
+          });
+        }
+      }
+
+      return attendanceData;
+    } catch (e) {
+      debugPrint('Error fetching attendance data: $e');
+      return [];
+    }
+  }
+
+  Future<List<Map<String, String>>> fetchAttendanceDataToday() async {
+    try {
+      // Format the selectedDate to match the custom format "MM_dd_yyyy"
+      String selectedDateFormatted =
+          DateFormat('MM_dd_yyyy').format(selectedDate1!);
+
+      // Reference to the `user_attendance` collection
+      CollectionReference userAttendanceCollection =
+          FirebaseFirestore.instance.collection('user_attendance');
+
+      // Fetch all documents in the `user_attendance` collection
+      QuerySnapshot userSnapshots = await userAttendanceCollection.get();
+
+      // Initialize the attendance data list
+      List<Map<String, String>> attendanceData = [];
+
+      // Process each document
+      for (var userDoc in userSnapshots.docs) {
+        String userId = userDoc.id; // Document ID
+        Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
+
+        // Check if the document's date matches the selected date
+        String? recordDate =
+            userData['date']; // Custom date field in the document
+        if (recordDate == selectedDateFormatted) {
+          // Extract additional fields
+          String name = userData['name'] ?? '';
+          String rfid = userData['rfid'] ?? '';
+          DateTime? timeIn =
+              userData['timeIn'] != null ? userData['timeIn'].toDate() : null;
+          DateTime? timeOut =
+              userData['timeOut'] != null ? userData['timeOut'].toDate() : null;
+
+          int totalMinutes = _calculateTotalMinutes(timeIn, timeOut);
+
+          // Adjust total minutes if timeIn is before 12 PM
+          if (timeIn != null && timeIn.hour < 12) {
+            if (totalMinutes > 60) {
+              totalMinutes -= 60;
+            } else {
+              totalMinutes = 0;
+            }
+          }
+
           int hours = totalMinutes ~/ 60;
           int minutes = totalMinutes % 60;
 
@@ -608,57 +756,81 @@ class _ReportPage extends State<ReportPage> {
   }
 
   Future<List<Map<String, String>>> fetchAttendanceData2() async {
-    List<Map<String, String>> attendanceData = [];
     try {
-      String yearMonth = DateFormat('MMM_yyyy').format(selectedMonth);
-      final yearMonthRef =
-          FirebaseFirestore.instance.collection('attendances').doc(yearMonth);
+      if (selectedMonth == null) return [];
 
-      List<String> days =
-          List.generate(31, (index) => (index + 1).toString().padLeft(2, '0'));
+      // Use a map to aggregate data by day
+      Map<String, Map<String, dynamic>> aggregatedData = {};
 
-      for (String day in days) {
-        final userDocRef = yearMonthRef.collection(day);
-        final userSnapshots =
-            await userDocRef.where('rfid', isEqualTo: _selectedRfid).get();
+      // Get number of days in the selected month
+      int daysInMonth =
+          DateUtils.getDaysInMonth(selectedMonth!.year, selectedMonth!.month);
 
-        if (userSnapshots.docs.isEmpty) {
-          continue;
-        }
+      for (int day = 1; day <= daysInMonth; day++) {
+        String formattedDate = DateFormat('MM_dd_yyyy').format(
+          DateTime(selectedMonth!.year, selectedMonth!.month, day),
+        );
 
-        for (var userDoc in userSnapshots.docs) {
-          Map<String, dynamic> userData =
-              userDoc.data() as Map<String, dynamic>;
+        // Reference to the user_attendance collection
+        CollectionReference userAttendanceCollection =
+            FirebaseFirestore.instance.collection('user_attendance');
+
+        // Fetch documents matching the formatted date and RFID
+        QuerySnapshot snapshot = await userAttendanceCollection
+            .where('rfid', isEqualTo: _selectedRfid)
+            .where('date', isEqualTo: formattedDate)
+            .get();
+
+        for (var doc in snapshot.docs) {
+          Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
 
           DateTime? timeIn =
-              userData['timeIn'] != null ? userData['timeIn'].toDate() : null;
+              data['timeIn'] != null ? data['timeIn'].toDate() : null;
           DateTime? timeOut =
-              userData['timeOut'] != null ? userData['timeOut'].toDate() : null;
+              data['timeOut'] != null ? data['timeOut'].toDate() : null;
 
           int totalMinutes = _calculateTotalMinutes(timeIn, timeOut);
-          int hours = totalMinutes ~/ 60;
-          int minutes = totalMinutes % 60;
 
-          String hourText = hours == 1 ? 'hour' : 'hours';
-          String minuteText = minutes == 1 ? 'minute' : 'minutes';
+          // Adjust total minutes if timeIn is before 12 PM
+          if (timeIn != null && timeIn.hour < 12) {
+            totalMinutes = totalMinutes > 60 ? totalMinutes - 60 : 0;
+          }
 
-          attendanceData.add({
-            'monthYear':
-                timeIn != null ? DateFormat('MMM dd').format(timeIn) : '',
-            'rfid': userData['rfid'] ?? '',
+          // Store aggregated data for the specific day
+          aggregatedData[formattedDate] = {
+            'monthYear': DateFormat('MMM dd').format(
+                DateTime(selectedMonth!.year, selectedMonth!.month, day)),
+            'rfid': data['rfid'] ?? '',
             'timeIn':
                 timeIn != null ? DateFormat('hh:mm a').format(timeIn) : '',
             'timeOut':
                 timeOut != null ? DateFormat('hh:mm a').format(timeOut) : '',
-            'totalHours':
-                '${hours > 0 ? '$hours $hourText ' : ''}${minutes > 0 ? '$minutes $minuteText' : ''}'
-                    .trim(),
-          });
+            'totalMinutes': totalMinutes,
+          };
         }
       }
 
-      return attendanceData;
+      // Convert aggregated data into a list format
+      return aggregatedData.entries.map((entry) {
+        int totalMinutes = entry.value['totalMinutes'] as int;
+        int hours = totalMinutes ~/ 60;
+        int minutes = totalMinutes % 60;
+
+        String hourText = hours == 1 ? 'hour' : 'hours';
+        String minuteText = minutes == 1 ? 'minute' : 'minutes';
+
+        return {
+          'monthYear': entry.value['monthYear'] as String,
+          'rfid': entry.value['rfid'] as String,
+          'timeIn': entry.value['timeIn'] as String,
+          'timeOut': entry.value['timeOut'] as String,
+          'totalHours':
+              '${hours > 0 ? '$hours $hourText ' : ''}${minutes > 0 ? '$minutes $minuteText' : ''}'
+                  .trim(),
+        };
+      }).toList();
     } catch (e) {
+      debugPrint('Error fetching attendance data: $e');
       return [];
     }
   }
@@ -694,7 +866,17 @@ class _ReportPage extends State<ReportPage> {
           await rootBundle.load('lib/assets/images/NLRC.jpg');
       final Uint8List imageBytes = imageData.buffer.asUint8List();
 
+      final ByteData imageData1 =
+          await rootBundle.load('lib/assets/images/BAGONG_PILIPINAS.png');
+      final Uint8List imageBytes1 = imageData1.buffer.asUint8List();
+
+      final ByteData imageData2 =
+          await rootBundle.load('lib/assets/images/AB.jpg');
+      final Uint8List imageBytes2 = imageData2.buffer.asUint8List();
+
       final logo = pw.MemoryImage(imageBytes);
+      final logo1 = pw.MemoryImage(imageBytes1);
+      final logo2 = pw.MemoryImage(imageBytes2);
       final attendanceData = await fetchAttendanceData2();
 
       // Ensure the employee name is fetched using RFID
@@ -717,85 +899,128 @@ class _ReportPage extends State<ReportPage> {
 
       int overallHours = totalMinutes ~/ 60;
       int overallMinutes = totalMinutes % 60;
+      String hourText = overallHours == 1 ? 'hour' : 'hours';
+      String minuteText = overallMinutes == 1 ? 'minute' : 'minutes';
+
+      const int rowsPerPage = 20;
 
       pdf.addPage(
-        pw.Page(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          margin: pw.EdgeInsets.only(top: 20, bottom: 20, left: 40, right: 40),
           build: (context) {
-            return pw.Column(
-              children: [
-                pw.Row(
-                  crossAxisAlignment: pw.CrossAxisAlignment.center,
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  children: [
-                    pw.Image(logo, width: 75, height: 75),
-                    pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.center,
+            final totalPages = (attendanceData.length / rowsPerPage)
+                .ceil(); // Calculate total pages
+
+            // Split data into chunks
+            final chunks = List.generate(
+              totalPages,
+              (i) => attendanceData
+                  .skip(i * rowsPerPage)
+                  .take(rowsPerPage)
+                  .toList(),
+            );
+
+            // Generate pages for each chunk
+            return chunks.map((chunk) {
+              return pw.Column(
+                children: [
+                  pw.Header(
+                    child: pw.Column(
                       children: [
-                        pw.Text('Republic of the Philippines',
-                            style: pw.TextStyle(fontSize: 12)),
-                        pw.Text('Department of Labor and Employment',
-                            style: pw.TextStyle(fontSize: 12)),
-                        pw.Text('National Labor Relations Commission',
-                            style: pw.TextStyle(
-                                fontSize: 12, fontWeight: pw.FontWeight.bold)),
-                        pw.Text('Attendance Report',
-                            style: pw.TextStyle(
-                                fontSize: 14,
-                                fontWeight: pw.FontWeight.bold,
-                                color: PdfColors.black)),
+                        pw.Row(
+                          crossAxisAlignment: pw.CrossAxisAlignment.center,
+                          mainAxisAlignment: pw.MainAxisAlignment.center,
+                          children: [
+                            pw.SizedBox(width: 30),
+                            pw.Image(logo, width: 65, height: 65),
+                            pw.SizedBox(width: 30),
+                            pw.Column(
+                              crossAxisAlignment: pw.CrossAxisAlignment.center,
+                              children: [
+                                pw.Text('Republic of the Philippines',
+                                    style: pw.TextStyle(fontSize: 12)),
+                                pw.Text('Department of Labor and Employment',
+                                    style: pw.TextStyle(fontSize: 12)),
+                                pw.Text('NATIONAL LABOR RELATIONS COMMISSION',
+                                    style: pw.TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: pw.FontWeight.bold)),
+                                pw.Text('REGIONAL ARBITRATION BRANCH No. IV',
+                                    style: pw.TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: pw.FontWeight.bold)),
+                                pw.Text(
+                                    '3rd & 4th Floor, Hectan Penthouse, Chipeco Ave.,',
+                                    style: pw.TextStyle(fontSize: 12)),
+                                pw.Text('Brgy. Halang, Calamba City, Laguna',
+                                    style: pw.TextStyle(fontSize: 12)),
+                                pw.Text('Attendance Report',
+                                    style: pw.TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: pw.FontWeight.bold,
+                                        color: PdfColors.black)),
+                              ],
+                            ),
+                            pw.SizedBox(width: 5),
+                            pw.Image(logo1, width: 65, height: 65),
+                            pw.SizedBox(width: 5),
+                            pw.Image(logo2, width: 65, height: 45),
+                          ],
+                        ),
+                        pw.SizedBox(height: 5),
                       ],
                     ),
-                    pw.SizedBox(width: 50),
-                  ],
-                ),
-                pw.SizedBox(height: 20),
-                pw.Text('$employeeName',
-                    style: pw.TextStyle(
-                        fontSize: 13,
-                        fontWeight: pw.FontWeight.bold,
-                        color: PdfColors.black)),
-                pw.Text(DateFormat.yMMM().format(selectedMonth),
-                    style: const pw.TextStyle(
-                        fontSize: 11, color: PdfColors.black)),
-                pw.SizedBox(height: 10),
-                pw.Table.fromTextArray(
-                  headers: ['Date', 'Time In', 'Time Out', 'Total Hours'],
-                  data: [
-                    ...attendanceData.map((employee) {
-                      return [
-                        employee['monthYear'] ?? '',
-                        employee['timeIn'] ?? '',
-                        employee['timeOut'] ?? '',
-                        employee['totalHours'] ?? '',
-                      ];
-                    }).toList(),
-                    // Add a row for overall total hours
-                    [
-                      '',
-                      '',
-                      '',
-                      pw.Text(
-                        'Overall Total: $overallHours hours $overallMinutes minutes',
-                        style: pw.TextStyle(
+                  ),
+                  pw.Text('$employeeName',
+                      style: pw.TextStyle(
+                          fontSize: 13,
                           fontWeight: pw.FontWeight.bold,
-                          fontSize: 10,
+                          color: PdfColors.black)),
+                  pw.Text(DateFormat.yMMM().format(selectedMonth!),
+                      style: const pw.TextStyle(
+                          fontSize: 11, color: PdfColors.black)),
+                  pw.SizedBox(height: 10),
+                  pw.Table.fromTextArray(
+                    headers: ['Date', 'Time In', 'Time Out', 'Total Hours'],
+                    data: [
+                      ...chunk.map((employee) {
+                        return [
+                          employee['monthYear'] ?? '',
+                          employee['timeIn'] ?? '',
+                          employee['timeOut'] ?? '',
+                          employee['totalHours'] ?? '',
+                        ];
+                      }).toList(),
+                      // Add a row for overall total hours
+                      [
+                        '',
+                        '',
+                        '',
+                        pw.Text(
+                          'Overall Total: $overallHours $hourText $overallMinutes $minuteText',
+                          style: pw.TextStyle(
+                            fontWeight: pw.FontWeight.bold,
+                            fontSize: 10,
+                          ),
                         ),
-                      ),
+                      ],
                     ],
-                  ],
-                  border: pw.TableBorder.all(color: PdfColors.black, width: 1),
-                  cellAlignment: pw.Alignment.center,
-                  headerStyle: pw.TextStyle(
-                      fontSize: 12,
-                      fontWeight: pw.FontWeight.bold,
-                      color: PdfColors.black),
-                  headerDecoration:
-                      const pw.BoxDecoration(color: PdfColors.white),
-                  cellStyle: const pw.TextStyle(fontSize: 10),
-                  cellPadding: const pw.EdgeInsets.all(8),
-                ),
-              ],
-            );
+                    border:
+                        pw.TableBorder.all(color: PdfColors.black, width: 1),
+                    cellAlignment: pw.Alignment.center,
+                    headerStyle: pw.TextStyle(
+                        fontSize: 12,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.white),
+                    headerDecoration:
+                        const pw.BoxDecoration(color: PdfColors.black),
+                    cellStyle: const pw.TextStyle(fontSize: 10),
+                    cellPadding: const pw.EdgeInsets.all(8),
+                  ),
+                ],
+              );
+            }).toList();
           },
         ),
       );
@@ -804,7 +1029,8 @@ class _ReportPage extends State<ReportPage> {
       Uint8List pdfBytes = await pdf.save();
       final userProfile =
           Platform.environment['USERPROFILE']; // Get the user's home directory
-      final directoryPath = '$userProfile\\Documents\\NLRC';
+      final directoryPath =
+          '$userProfile\\Documents\\NLRC\\Attendance Report (BY MONTH)';
 
       // Ensure the NLRC directory exists
       final Directory nlrcDirectory = Directory(directoryPath);
@@ -819,12 +1045,517 @@ class _ReportPage extends State<ReportPage> {
         isLoadingDialogOpen = false; // Reset the flag
       }
 
+      // Show the PDF preview dialog
+      await showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return Scaffold(
+            appBar: AppBar(
+              title: Text('PDF Preview'),
+              actions: [
+                TextButton.icon(
+                  style: TextButton.styleFrom(
+                    backgroundColor: Color.fromRGBO(69, 90, 100, 1),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 36,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  icon: Icon(Icons.download, color: Colors.white),
+                  label: Text('Download PDF',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      )),
+                  onPressed: () async {
+                    Navigator.pop(context); // Close the preview dialog
+                    final Uint8List pdfBytes = await pdf.save();
+
+                    // Use FilePicker to prompt the user with a "Save As" dialog
+                    String? outputFilePath = await FilePicker.platform.saveFile(
+                      dialogTitle: 'Save PDF File',
+                      fileName:
+                          '$_selectedName - ${DateFormat.yMMM().format(selectedMonth!)}.pdf',
+                      allowedExtensions: ['pdf'],
+                      initialDirectory: directoryPath,
+                      type: FileType.custom,
+                    );
+
+                    // If the user cancels the save dialog, exit
+                    if (outputFilePath == null) {
+                      return;
+                    }
+
+                    // Ensure the file name ends with .pdf
+                    if (!outputFilePath.endsWith('.pdf')) {
+                      outputFilePath = '$outputFilePath.pdf';
+                    }
+
+                    // Save the PDF file to the selected location
+                    final file = File(outputFilePath);
+                    await file.writeAsBytes(pdfBytes);
+
+                    // Optionally, open the file after saving
+                    try {
+                      await Process.start('explorer', [outputFilePath]);
+                    } catch (e) {
+                      print("Error opening file: $e");
+                    }
+                  },
+                ),
+                SizedBox(width: 10),
+              ],
+            ),
+            body: PdfPreview(
+              build: (format) => pdf.save(),
+              allowPrinting: false,
+              allowSharing: false,
+              canChangePageFormat: false,
+              canChangeOrientation: false,
+              maxPageWidth: 750,
+              initialPageFormat:
+                  PdfPageFormat.a4, // Set default zoom to fit content
+            ),
+          );
+        },
+      );
+    } catch (e) {
+      print("Error: $e");
+      if (isLoadingDialogOpen) {
+        Navigator.pop(context);
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to generate PDF')),
+      );
+    }
+  }
+
+  Future<void> generateAndPrintPDFbyDay(BuildContext context) async {
+    bool isLoadingDialogOpen = false;
+
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        isLoadingDialogOpen = true; // Set the flag
+        return Dialog(
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(width: 20),
+                Text("Generating PDF, Please wait a moment..."),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    try {
+      final pdf = pw.Document();
+      final ByteData imageData =
+          await rootBundle.load('lib/assets/images/NLRC.jpg');
+      final Uint8List imageBytes = imageData.buffer.asUint8List();
+
+      final ByteData imageData1 =
+          await rootBundle.load('lib/assets/images/BAGONG_PILIPINAS.png');
+      final Uint8List imageBytes1 = imageData1.buffer.asUint8List();
+
+      final ByteData imageData2 =
+          await rootBundle.load('lib/assets/images/AB.jpg');
+      final Uint8List imageBytes2 = imageData2.buffer.asUint8List();
+
+      final logo = pw.MemoryImage(imageBytes);
+      final logo1 = pw.MemoryImage(imageBytes1);
+      final logo2 = pw.MemoryImage(imageBytes2);
+      final attendanceData = await fetchAttendanceDataToday();
+
+      const int rowsPerPage =
+          23; // Adjust based on your layout and desired number of rows per page
+
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          margin: pw.EdgeInsets.only(top: 20, bottom: 20, left: 40, right: 40),
+          build: (context) {
+            final totalPages = (attendanceData.length / rowsPerPage)
+                .ceil(); // Calculate total pages
+
+            // Split data into chunks
+            final chunks = List.generate(
+              totalPages,
+              (i) => attendanceData
+                  .skip(i * rowsPerPage)
+                  .take(rowsPerPage)
+                  .toList(),
+            );
+
+            // Generate pages for each chunk
+            return chunks.map((chunk) {
+              return pw.Column(
+                children: [
+                  pw.Header(
+                    child: pw.Column(
+                      children: [
+                        pw.Row(
+                          crossAxisAlignment: pw.CrossAxisAlignment.center,
+                          mainAxisAlignment: pw.MainAxisAlignment.center,
+                          children: [
+                            pw.SizedBox(width: 30),
+                            pw.Image(logo, width: 65, height: 65),
+                            pw.SizedBox(width: 30),
+                            pw.Column(
+                              crossAxisAlignment: pw.CrossAxisAlignment.center,
+                              children: [
+                                pw.Text('Republic of the Philippines',
+                                    style: pw.TextStyle(fontSize: 12)),
+                                pw.Text('Department of Labor and Employment',
+                                    style: pw.TextStyle(fontSize: 12)),
+                                pw.Text('NATIONAL LABOR RELATIONS COMMISSION',
+                                    style: pw.TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: pw.FontWeight.bold)),
+                                pw.Text('REGIONAL ARBITRATION BRANCH No. IV',
+                                    style: pw.TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: pw.FontWeight.bold)),
+                                pw.Text(
+                                    '3rd & 4th Floor, Hectan Penthouse, Chipeco Ave.,',
+                                    style: pw.TextStyle(fontSize: 12)),
+                                pw.Text('Brgy. Halang, Calamba City, Laguna',
+                                    style: pw.TextStyle(fontSize: 12)),
+                                pw.Text('Attendance Report',
+                                    style: pw.TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: pw.FontWeight.bold,
+                                        color: PdfColors.black)),
+                              ],
+                            ),
+                            pw.SizedBox(width: 5),
+                            pw.Image(logo1, width: 65, height: 65),
+                            pw.SizedBox(width: 5),
+                            pw.Image(logo2, width: 65, height: 45),
+                          ],
+                        ),
+                        pw.SizedBox(height: 5),
+                      ],
+                    ),
+                  ),
+                  pw.Text(DateFormat('MMM dd, yyyy').format(selectedDate1!),
+                      style: const pw.TextStyle(
+                          fontSize: 11, color: PdfColors.black)),
+                  pw.SizedBox(height: 10),
+                  pw.Table.fromTextArray(
+                    headers: ['Name', 'Time In', 'Time Out', 'Total Hours'],
+                    data: [
+                      ...chunk.map((employee) {
+                        return [
+                          employee['name'] ?? '',
+                          employee['timeIn'] ?? '',
+                          employee['timeOut'] ?? '',
+                          employee['totalHours'] ?? '',
+                        ];
+                      }).toList(),
+                    ],
+                    border:
+                        pw.TableBorder.all(color: PdfColors.black, width: 1),
+                    cellAlignment: pw.Alignment.center,
+                    headerStyle: pw.TextStyle(
+                        fontSize: 12,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.white),
+                    headerDecoration:
+                        const pw.BoxDecoration(color: PdfColors.black),
+                    cellStyle: const pw.TextStyle(fontSize: 10),
+                    cellPadding: const pw.EdgeInsets.all(8),
+                  ),
+                ],
+              );
+            }).toList();
+          },
+        ),
+      );
+
+      // Convert the PDF document to bytes
+      Uint8List pdfBytes = await pdf.save();
+      final userProfile =
+          Platform.environment['USERPROFILE']; // Get the user's home directory
+      final directoryPath =
+          '$userProfile\\Documents\\NLRC\\Attendance Report (BY DAY)';
+
+      // Ensure the NLRC directory exists
+      final Directory nlrcDirectory = Directory(directoryPath);
+      if (!nlrcDirectory.existsSync()) {
+        // If NLRC directory does not exist, create it
+        nlrcDirectory.createSync(recursive: true);
+      }
+
+      // Dismiss the loading dialog before opening the "Save As" dialog
+      if (isLoadingDialogOpen) {
+        Navigator.pop(context); // Close the loading dialog
+        isLoadingDialogOpen = false; // Reset the flag
+      }
+
+      // Show the PDF preview dialog
+      await showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return Scaffold(
+            appBar: AppBar(
+              title: Text('PDF Preview'),
+              actions: [
+                TextButton.icon(
+                  style: TextButton.styleFrom(
+                    backgroundColor: Color.fromRGBO(69, 90, 100, 1),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 36,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  icon: Icon(Icons.download, color: Colors.white),
+                  label: Text('Download PDF',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      )),
+                  onPressed: () async {
+                    Navigator.pop(context); // Close the preview dialog
+                    final Uint8List pdfBytes = await pdf.save();
+
+                    // Use FilePicker to prompt the user with a "Save As" dialog
+                    String? outputFilePath = await FilePicker.platform.saveFile(
+                      dialogTitle: 'Save PDF File',
+                      fileName:
+                          'Attendance Report in ${DateFormat.yMMMd().format(selectedDate1!)}.pdf',
+                      allowedExtensions: ['pdf'],
+                      initialDirectory: directoryPath,
+                      type: FileType.custom,
+                    );
+
+                    // If the user cancels the save dialog, exit
+                    if (outputFilePath == null) {
+                      return;
+                    }
+
+                    // Ensure the file name ends with .pdf
+                    if (!outputFilePath.endsWith('.pdf')) {
+                      outputFilePath = '$outputFilePath.pdf';
+                    }
+
+                    // Save the PDF file to the selected location
+                    final file = File(outputFilePath);
+                    await file.writeAsBytes(pdfBytes);
+
+                    // Optionally, open the file after saving
+                    try {
+                      await Process.start('explorer', [outputFilePath]);
+                    } catch (e) {
+                      print("Error opening file: $e");
+                    }
+                  },
+                ),
+                SizedBox(width: 10),
+              ],
+            ),
+            body: PdfPreview(
+              build: (format) => pdf.save(),
+              allowPrinting: false,
+              allowSharing: false,
+              canChangePageFormat: false,
+              canChangeOrientation: false,
+              maxPageWidth: 750,
+              initialPageFormat:
+                  PdfPageFormat.a4, // Set default zoom to fit content
+            ),
+          );
+        },
+      );
+    } catch (e) {
+      print("Error: $e");
+      if (isLoadingDialogOpen) {
+        Navigator.pop(context);
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to generate PDF')),
+      );
+    }
+  }
+
+  Future<void> generateAndPrintByRange(BuildContext context) async {
+    bool isLoadingDialogOpen = false;
+
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        isLoadingDialogOpen = true; // Set the flag
+        return Dialog(
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                CircularProgressIndicator(),
+                SizedBox(width: 20),
+                Text("Generating PDF, Please wait a moment..."),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    try {
+      final pdf = pw.Document();
+      final ByteData imageData =
+          await rootBundle.load('lib/assets/images/NLRC.jpg');
+      final Uint8List imageBytes = imageData.buffer.asUint8List();
+
+      final ByteData imageData1 =
+          await rootBundle.load('lib/assets/images/BAGONG_PILIPINAS.png');
+      final Uint8List imageBytes1 = imageData1.buffer.asUint8List();
+
+      final ByteData imageData2 =
+          await rootBundle.load('lib/assets/images/AB.jpg');
+      final Uint8List imageBytes2 = imageData2.buffer.asUint8List();
+
+      final logo = pw.MemoryImage(imageBytes);
+      final logo1 = pw.MemoryImage(imageBytes1);
+      final logo2 = pw.MemoryImage(imageBytes2);
+      final attendanceData = await fetchAttendanceData1();
+
+      const int rowsPerPage =
+          23; // Adjust based on your layout and desired number of rows per page
+
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          margin: pw.EdgeInsets.only(top: 20, bottom: 20, left: 40, right: 40),
+          build: (context) {
+            final totalPages = (attendanceData.length / rowsPerPage)
+                .ceil(); // Calculate total pages
+
+            // Split data into chunks
+            final chunks = List.generate(
+              totalPages,
+              (i) => attendanceData
+                  .skip(i * rowsPerPage)
+                  .take(rowsPerPage)
+                  .toList(),
+            );
+
+            // Generate pages for each chunk
+            return chunks.map((chunk) {
+              return pw.Column(
+                children: [
+                  pw.Header(
+                    child: pw.Column(
+                      children: [
+                        pw.Row(
+                          crossAxisAlignment: pw.CrossAxisAlignment.center,
+                          mainAxisAlignment: pw.MainAxisAlignment.center,
+                          children: [
+                            pw.SizedBox(width: 30),
+                            pw.Image(logo, width: 65, height: 65),
+                            pw.SizedBox(width: 30),
+                            pw.Column(
+                              crossAxisAlignment: pw.CrossAxisAlignment.center,
+                              children: [
+                                pw.Text('Republic of the Philippines',
+                                    style: pw.TextStyle(fontSize: 12)),
+                                pw.Text('Department of Labor and Employment',
+                                    style: pw.TextStyle(fontSize: 12)),
+                                pw.Text('NATIONAL LABOR RELATIONS COMMISSION',
+                                    style: pw.TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: pw.FontWeight.bold)),
+                                pw.Text('REGIONAL ARBITRATION BRANCH No. IV',
+                                    style: pw.TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: pw.FontWeight.bold)),
+                                pw.Text(
+                                    '3rd & 4th Floor, Hectan Penthouse, Chipeco Ave.,',
+                                    style: pw.TextStyle(fontSize: 12)),
+                                pw.Text('Brgy. Halang, Calamba City, Laguna',
+                                    style: pw.TextStyle(fontSize: 12)),
+                                pw.Text('Attendance Report',
+                                    style: pw.TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: pw.FontWeight.bold,
+                                        color: PdfColors.black)),
+                              ],
+                            ),
+                            pw.SizedBox(width: 5),
+                            pw.Image(logo1, width: 65, height: 65),
+                            pw.SizedBox(width: 5),
+                            pw.Image(logo2, width: 65, height: 45),
+                          ],
+                        ),
+                        pw.SizedBox(height: 5),
+                      ],
+                    ),
+                  ),
+                  pw.Text(
+                      '${DateFormat.yMMMd().format(selectedDateRange!.start)} - ${DateFormat.yMMMd().format(selectedDateRange!.end)}',
+                      style: const pw.TextStyle(
+                          fontSize: 11, color: PdfColors.black)),
+                  pw.SizedBox(height: 10),
+                  pw.Table.fromTextArray(
+                    headers: ['Name', 'Total Hours'],
+                    data: [
+                      ...chunk.map((employee) {
+                        return [
+                          employee['name'] ?? '',
+                          employee['totalHours'] ?? '',
+                        ];
+                      }).toList(),
+                    ],
+                    border:
+                        pw.TableBorder.all(color: PdfColors.black, width: 1),
+                    cellAlignment: pw.Alignment.center,
+                    headerStyle: pw.TextStyle(
+                        fontSize: 12,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.white),
+                    headerDecoration:
+                        const pw.BoxDecoration(color: PdfColors.black),
+                    cellStyle: const pw.TextStyle(fontSize: 10),
+                    cellPadding: const pw.EdgeInsets.all(8),
+                  ),
+                ],
+              );
+            }).toList();
+          },
+        ),
+      );
+
+      // Convert the PDF document to bytes
+      Uint8List pdfBytes = await pdf.save();
+
+      // Dismiss the loading dialog before showing the "Save As" dialog
+      if (isLoadingDialogOpen) {
+        Navigator.pop(context); // Close the loading dialog
+        isLoadingDialogOpen = false; // Reset the flag
+      }
+
       // Use FilePicker to prompt the user with a "Save As" dialog
       String? outputFilePath = await FilePicker.platform.saveFile(
         dialogTitle: 'Save PDF File',
         fileName:
-            '$_selectedName - ${DateFormat.yMMM().format(selectedMonth)}.pdf',
-        initialDirectory: directoryPath,
+            'Report Attendance - ${DateFormat.yMMMd().format(selectedDateRange!.start)} - ${DateFormat.yMMMd().format(selectedDateRange!.end)}.pdf',
         allowedExtensions: ['pdf'],
         type: FileType.custom,
       );
@@ -833,7 +1564,8 @@ class _ReportPage extends State<ReportPage> {
       if (outputFilePath == null) {
         return;
       }
-      // Ensure the file name ends with `.pdf`
+
+      // Ensure the file name ends with .pdf
       if (!outputFilePath.endsWith('.pdf')) {
         outputFilePath = '$outputFilePath.pdf';
       }
@@ -849,14 +1581,13 @@ class _ReportPage extends State<ReportPage> {
         print("Error opening file: $e");
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        snackBarFailed('Failed to generate PDF', context),
-      );
-    } finally {
-      // Close the loading dialog if still open
+      print("Error: $e");
       if (isLoadingDialogOpen) {
-        Navigator.pop(context);
+        Navigator.pop(context); // Close the loading dialog
       }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to generate PDF')),
+      );
     }
   }
 
@@ -873,7 +1604,8 @@ class _ReportPage extends State<ReportPage> {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
+          }
+          if (snapshot.hasError) {
             return const Center(child: Text('Error fetching data'));
           } else {
             final attendanceData1 = snapshot.data?[0] ?? [];
@@ -899,84 +1631,129 @@ class _ReportPage extends State<ReportPage> {
                           ),
                         ),
                       ),
-                      SizedBox(
-                          height: 33,
-                          child: TextButton(
-                            style: TextButton.styleFrom(
-                              backgroundColor:
-                                  const Color.fromRGBO(69, 90, 100, 1),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 12,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            onPressed: () {
-                              pickCustomDateRange(
-                                  context); // Call the full-screen date range picker
-                            },
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.date_range, // Date range icon
-                                  color: Colors.white,
+                      if (selectedDateRange == null)
+                        SizedBox(
+                            height: 33,
+                            child: TextButton(
+                              style: TextButton.styleFrom(
+                                backgroundColor:
+                                    const Color.fromRGBO(69, 90, 100, 1),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 12,
                                 ),
-                                const SizedBox(
-                                    width: 8), // Space between icon and text
-                                Text(
-                                  'SELECT RANGE',
-                                  style: const TextStyle(
-                                    fontSize: 14,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              onPressed: () {
+                                pickCustomDateRange(
+                                    context); // Call the full-screen date range picker
+                              },
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.date_range, // Date range icon
                                     color: Colors.white,
-                                    fontWeight: FontWeight.bold,
                                   ),
-                                ),
-                              ],
-                            ),
-                          )),
-                      const SizedBox(width: 10),
-                      TextButton(
-                        style: TextButton.styleFrom(
-                          backgroundColor: Color.fromRGBO(69, 90, 100, 1),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 36,
-                            vertical: 12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (context) {
-                              return _buildPdfGenerationDialog('GENERATE PDF');
-                            },
-                          );
-                        },
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.picture_as_pdf, // PDF icon
-                              color: Colors.white,
-                            ),
-                            const SizedBox(
-                                width: 8), // Space between icon and text
-                            Text(
-                              'GENERATE',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
+                                  const SizedBox(
+                                      width: 8), // Space between icon and text
+                                  Text(
+                                    'DATE SELECT',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
                               ),
+                            )),
+                      if (selectedDateRange == null) const SizedBox(width: 10),
+                      if (selectedDateRange == null)
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color.fromRGBO(69, 90, 100, 1),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 36,
+                              vertical: 12,
                             ),
-                          ],
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) {
+                                return _buildPdfGenerationDialog1(
+                                    'GENERATE PDF');
+                              },
+                            );
+                          },
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.picture_as_pdf, // PDF icon
+                                color: Colors.white,
+                              ),
+                              const SizedBox(
+                                  width: 8), // Space between icon and text
+                              Text(
+                                'OVERALL',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      )
+                      if (selectedDateRange == null) const SizedBox(width: 10),
+                      if (selectedDateRange == null)
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color.fromRGBO(69, 90, 100, 1),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 36,
+                              vertical: 12,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) {
+                                return _buildPdfGenerationDialog(
+                                    'GENERATE PDF');
+                              },
+                            );
+                          },
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.picture_as_pdf, // PDF icon
+                                color: Colors.white,
+                              ),
+                              const SizedBox(
+                                  width: 8), // Space between icon and text
+                              Text(
+                                'WORKER',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
                     ],
                   ),
                   const Divider(
@@ -986,13 +1763,35 @@ class _ReportPage extends State<ReportPage> {
                   if (selectedDateRange != null) ...[
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8.0),
-                      child: Text(
-                        'Selected Date Range: ${DateFormat.yMMMd().format(selectedDateRange!.start)} - ${DateFormat.yMMMd().format(selectedDateRange!.end)}',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black54,
-                        ),
+                      child: Row(
+                        children: [
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: IconButton(
+                              iconSize: 22,
+                              padding: const EdgeInsets.all(1.0),
+                              icon: const Icon(Icons.arrow_back),
+                              onPressed: () {
+                                setState(() {
+                                  selectedDateRange = null;
+                                  selectedDate = DateTime.now();
+                                });
+                              },
+                              color: Color.fromRGBO(55, 71, 79, 1),
+                            ),
+                          ),
+                          SizedBox(
+                            width: 20,
+                          ),
+                          Text(
+                            'Selected Date Range: ${DateFormat.yMMMd().format(selectedDateRange!.start)} - ${DateFormat.yMMMd().format(selectedDateRange!.end)}',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     if (attendanceData1.isEmpty)
@@ -1019,24 +1818,6 @@ class _ReportPage extends State<ReportPage> {
                                         padding: const EdgeInsets.all(1.0),
                                         child: Stack(
                                           children: [
-                                            Align(
-                                              alignment: Alignment.centerLeft,
-                                              child: IconButton(
-                                                iconSize: 22,
-                                                padding:
-                                                    const EdgeInsets.all(1.0),
-                                                icon: const Icon(
-                                                    Icons.arrow_back),
-                                                onPressed: () {
-                                                  setState(() {
-                                                    selectedDateRange = null;
-                                                    selectedDate =
-                                                        DateTime.now();
-                                                  });
-                                                },
-                                                color: Colors.white,
-                                              ),
-                                            ),
                                             Align(
                                               alignment: Alignment.center,
                                               child: const Text(
@@ -1124,23 +1905,6 @@ class _ReportPage extends State<ReportPage> {
                                       padding: const EdgeInsets.all(1.0),
                                       child: Stack(
                                         children: [
-                                          Align(
-                                            alignment: Alignment.centerLeft,
-                                            child: IconButton(
-                                              iconSize: 22,
-                                              padding:
-                                                  const EdgeInsets.all(1.0),
-                                              icon:
-                                                  const Icon(Icons.arrow_back),
-                                              onPressed: () {
-                                                setState(() {
-                                                  selectedDateRange = null;
-                                                  selectedDate = DateTime.now();
-                                                });
-                                              },
-                                              color: Colors.white,
-                                            ),
-                                          ),
                                           Align(
                                             alignment: Alignment.center,
                                             child: const Text(
@@ -1513,37 +2277,65 @@ class _ReportPage extends State<ReportPage> {
                 ),
               ),
             )
-          : null, // Hide the button if selectedDateRange is not null
+          : FloatingActionButton(
+              backgroundColor: const Color.fromRGBO(69, 90, 100, 1),
+              onPressed: () {
+                generateAndPrintByRange(context);
+              },
+              tooltip: 'Download this record.',
+              child: const Icon(
+                Icons.picture_as_pdf,
+                color: Colors.white,
+                size: 28,
+              ),
+              shape: const CircleBorder(),
+            ),
     );
   }
 
   Widget _buildPdfGenerationDialog(String title) {
-    DateTime? selectedMonth;
     return StatefulBuilder(
       builder: (context, setState) {
-        return Dialog(
-          insetPadding: EdgeInsets.symmetric(horizontal: 475),
+        return AlertDialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16.0),
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
+          title: Center(
+            child: SizedBox(
+              width: MediaQuery.sizeOf(context).width * 0.2,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    'Generate individual worker data for the selected Date',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.black38,
+                      fontWeight: FontWeight.bold,
+                      height: 0.9,
+                    ),
+                    textAlign: TextAlign.center,
+                    softWrap: true,
+                  )
+                ],
+              ),
+            ),
+          ),
+          content: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 10),
                 Center(
                   child: _names.isEmpty
                       ? CircularProgressIndicator()
                       : Container(
-                          width: 400,
                           decoration: BoxDecoration(
                             border: Border.all(
                               color: Colors.grey,
@@ -1595,6 +2387,27 @@ class _ReportPage extends State<ReportPage> {
                         ),
                 ),
                 SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          selectedMonth != null
+                              ? 'Selected Date: ${selectedMonth != null ? DateFormat.yMMM().format(selectedMonth!) : "--"}'
+                              : 'Selected Date: --',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color.fromRGBO(55, 71, 79, 1),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 5),
                 FittedBox(
                   fit: BoxFit
                       .scaleDown, // Ensures the content scales down to fit
@@ -1619,7 +2432,7 @@ class _ReportPage extends State<ReportPage> {
 
                           showMonthPicker(
                             context: context,
-                            initialDate: selectedMonth ?? today,
+                            initialDate: selectedMonth ?? DateTime.now(),
                             firstDate: DateTime(2000),
                             lastDate: dynamicLastDate,
                             headerTitle: Text(
@@ -1677,7 +2490,7 @@ class _ReportPage extends State<ReportPage> {
                           });
                         },
                         child: const Text(
-                          'Choose Month & Year',
+                          'Select Date',
                           style: TextStyle(
                             fontSize: 18,
                             color: Colors.white,
@@ -1688,88 +2501,218 @@ class _ReportPage extends State<ReportPage> {
                     ],
                   ),
                 ),
-                SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          selectedMonth != null
-                              ? 'Selected Month & Year: ${selectedMonth != null ? DateFormat.yMMM().format(selectedMonth!) : "--"}'
-                              : 'Selected Month & Year: --',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color.fromRGBO(55, 71, 79, 1),
-                          ),
-                        ),
+              ],
+            ),
+          ),
+          actions: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton(
+                  child: Text(
+                    'Close',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _selectedName = null; // Reset selected name
+                      _selectedRfid = null; // Reset selected RFID
+                      selectedMonth = null; // Reset selected month
+                    });
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(horizontal: 20),
+                  ),
+                ),
+                Tooltip(
+                  message: _selectedName != null && selectedMonth != null
+                      ? 'Generate PDF'
+                      : 'Please Select a User and Date',
+                  child: TextButton(
+                    onPressed: (_selectedName != null && selectedMonth != null)
+                        ? () {
+                            generateAndPrintPDF(context);
+                          }
+                        : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          (_selectedName != null && selectedMonth != null)
+                              ? Colors.green
+                              : Colors.grey,
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: Colors.grey,
+                      disabledForegroundColor: Colors.grey[300],
+                      padding: EdgeInsets.symmetric(horizontal: 20),
+                    ),
+                    child: Text(
+                      'Save',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ],
+                  ),
                 ),
-                SizedBox(height: 10),
-                Center(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      ElevatedButton.icon(
-                        icon: Icon(
-                          Icons.close,
-                        ),
-                        label: Text('Close'),
-                        onPressed: () {
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildPdfGenerationDialog1(String title) {
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16.0),
+          ),
+          title: Center(
+            child: SizedBox(
+              width: MediaQuery.sizeOf(context).width * 0.2,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    'Generate workers data for the selected Date',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.black38,
+                      fontWeight: FontWeight.bold,
+                      height: 0.9,
+                    ),
+                    textAlign: TextAlign.center,
+                    softWrap: true,
+                  )
+                ],
+              ),
+            ),
+          ),
+          content: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    selectedDate1 != null
+                        ? 'Selected Date: ${selectedDate1 != null ? DateFormat.yMMMd().format(selectedDate1!) : "--"}'
+                        : 'Selected Date: --',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color.fromRGBO(55, 71, 79, 1),
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  height: 5,
+                ),
+                FittedBox(
+                  fit: BoxFit
+                      .scaleDown, // Ensures the content scales down to fit
+                  child: TextButton(
+                    style: TextButton.styleFrom(
+                      backgroundColor: const Color.fromRGBO(69, 90, 100, 1),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onPressed: () {
+                      showDatePicker(
+                        context: context,
+                        initialDate: selectedDate1 ?? DateTime.now(),
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime.now(),
+                      ).then((dateToday) {
+                        if (dateToday != null) {
                           setState(() {
-                            _selectedName = null; // Reset selected name
-                            _selectedRfid = null; // Reset selected RFID
-                            selectedMonth = null; // Reset selected month
+                            selectedDate1 = dateToday;
                           });
-                          Navigator.pop(context);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blueAccent,
-                          foregroundColor: Colors.white,
-                          padding: EdgeInsets.symmetric(horizontal: 20),
-                        ),
+                        }
+                      });
+                    },
+                    child: const Text(
+                      'Choose a Date',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
                       ),
-                      Tooltip(
-                        message: _selectedName != null && selectedMonth != null
-                            ? 'Generate PDF'
-                            : 'Please Select a User and Date',
-                        child: TextButton(
-                          onPressed:
-                              (_selectedName != null && selectedMonth != null)
-                                  ? () {
-                                      generateAndPrintPDF(context);
-                                    }
-                                  : null,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                (_selectedName != null && selectedMonth != null)
-                                    ? Colors.green
-                                    : Colors.grey,
-                            foregroundColor: Colors.white,
-                            disabledBackgroundColor: Colors.grey,
-                            disabledForegroundColor: Colors.grey[300],
-                            padding: EdgeInsets.symmetric(horizontal: 20),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.save),
-                              SizedBox(width: 8),
-                              Text('Save'),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ],
             ),
           ),
+          actions: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton(
+                  child: Text(
+                    'Close',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      selectedDate1 = null; // Reset selected month
+                    });
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(horizontal: 20),
+                  ),
+                ),
+                Tooltip(
+                  message: selectedDate1 != null
+                      ? 'Generate PDF'
+                      : 'Please Select a Date',
+                  child: TextButton(
+                    onPressed: (selectedDate1 != null)
+                        ? () {
+                            generateAndPrintPDFbyDay(context);
+                          }
+                        : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          (selectedDate1 != null) ? Colors.green : Colors.grey,
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: Colors.grey,
+                      disabledForegroundColor: Colors.grey[300],
+                      padding: EdgeInsets.symmetric(horizontal: 20),
+                    ),
+                    child: Text(
+                      'Save',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         );
       },
     );

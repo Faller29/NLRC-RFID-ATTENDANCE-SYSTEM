@@ -192,7 +192,7 @@ class _MyHomePageState extends State<MyHomePage> {
       _expirationTimer!.cancel(); // Cancel any existing timer
     }
 
-    _expirationTimer = Timer(const Duration(milliseconds: 30), () {
+    _expirationTimer = Timer(const Duration(milliseconds: 300), () {
       if (_rfidData.isNotEmpty) {
         debugPrint('Expiration timer triggered: Clearing RFID data.');
         setState(() {
@@ -289,6 +289,7 @@ class _MyHomePageState extends State<MyHomePage> {
             maxHeight: MediaQuery.sizeOf(context).height, maxWidth: 300),
         child: SingleChildScrollView(
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: _awayModeNotifications.map((notification) {
               final parts = notification.split('|'); // Split RFID and timestamp
               final rfid = parts[0];
@@ -487,6 +488,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       announcementIsOn = !announcementIsOn;
                     });
                   },
+                  tooltip: 'Show/Hide Announcement',
                   child: Icon(FontAwesomeIcons.bell),
                   backgroundColor: Color.fromARGB(255, 44, 15, 148),
                   foregroundColor: Colors.white,

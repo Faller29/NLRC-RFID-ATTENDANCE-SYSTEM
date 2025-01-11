@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:iconly/iconly.dart';
 import 'package:intl/intl.dart';
 import 'package:nlrc_rfid_scanner/assets/themeData.dart';
@@ -10,6 +12,7 @@ import 'package:nlrc_rfid_scanner/backend/data/fetch_attendance.dart';
 import 'package:nlrc_rfid_scanner/backend/data/file_reader.dart';
 import 'package:nlrc_rfid_scanner/main.dart';
 import 'package:shimmer_animation/shimmer_animation.dart';
+import 'package:syncfusion_flutter_charts/charts.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -23,9 +26,22 @@ class _DashboardPageState extends State<DashboardPage> {
   String nlrc = "National Labor Relations Commission";
   String selectedTimeRange = "Today"; // Default value
   String selectedSorting = "Alphabetical"; // Default sorting option
-
+  late TransformationController _transformationController;
+  bool _isPanEnabled = true;
+  bool _isScaleEnabled = true;
+  late ZoomPanBehavior _zoomPanBehavior;
   @override
   void initState() {
+    _transformationController = TransformationController();
+    _zoomPanBehavior = ZoomPanBehavior(
+      //enablePinching: true,
+      enableSelectionZooming: true,
+      zoomMode: ZoomMode.x,
+      enablePanning: true,
+      //maximumZoomLevel: 10.0,
+      enableMouseWheelZooming: true,
+      //enableDoubleTapZooming: true,
+    );
     super.initState();
     /* WidgetsBinding.instance.addPostFrameCallback((_) {
       _fetchDatas();
@@ -154,7 +170,7 @@ class _DashboardPageState extends State<DashboardPage> {
                               ],
                             ),
                             Image.asset(
-                              'lib/assets/images/NLRC.png',
+                              'lib/assets/images/NLRC-WHITE.png',
                               fit: BoxFit.scaleDown,
                               width: 150,
                               height: 150,
@@ -187,7 +203,6 @@ class _DashboardPageState extends State<DashboardPage> {
                           fontSize: 20,
                         ),
                       ),
-                      const SizedBox(height: 8),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -239,7 +254,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         ],
                       ),
                       const SizedBox(
-                        height: 20,
+                        height: 10,
                       ),
                       isLoading
                           ? const Column(
@@ -256,72 +271,107 @@ class _DashboardPageState extends State<DashboardPage> {
                                 )
                               ],
                             )
-                          : Column(
-                              children: [
-                                AspectRatio(
-                                  aspectRatio: 4,
-                                  child: BarChart(
-                                    BarChartData(
-                                      alignment: BarChartAlignment.spaceAround,
-                                      barTouchData: BarTouchData(
-                                        touchTooltipData: BarTouchTooltipData(
-                                          getTooltipItem: (group, groupIndex,
-                                              rod, rodIndex) {
-                                            return BarTooltipItem(
-                                              '${_getWorkerName(group.x)}\n',
-                                              const TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                              children: [
-                                                TextSpan(
-                                                  text:
-                                                      '${rod.toY.toString()} worked hours',
-                                                  style: const TextStyle(
-                                                      color: Colors.white),
-                                                ),
-                                              ],
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                      titlesData: FlTitlesData(
-                                        leftTitles: const AxisTitles(
-                                          sideTitles: SideTitles(
-                                            showTitles: true,
-                                            reservedSize: 50,
+                          : AspectRatio(
+                              aspectRatio: 4,
+                              child: Stack(
+                                children: [
+                                  Positioned.fill(
+                                    child: Center(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            'Scroll to Zoom in or Out to see more names',
+                                            style: TextStyle(
+                                              color: Colors.black38,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
                                           ),
-                                        ),
-                                        bottomTitles: AxisTitles(
-                                          sideTitles: SideTitles(
-                                            showTitles: true,
-                                            getTitlesWidget: _getBottomTitles,
-                                            reservedSize: 50,
+                                          SizedBox(
+                                            height: 20,
                                           ),
-                                        ),
-                                        topTitles: const AxisTitles(
-                                            drawBelowEverything: false),
-                                        rightTitles: const AxisTitles(
-                                            drawBelowEverything: false),
+                                          Text(
+                                            'Hold Left and Drag Left to Right to see more',
+                                            style: TextStyle(
+                                              color: Colors.black38,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                          Text(
+                                            'Can\'t drag? try zooming in a bit first!',
+                                            style: TextStyle(
+                                              color: Colors.black38,
+                                              fontWeight: FontWeight.bold,
+                                              height: 0.2,
+                                              fontStyle: FontStyle.italic,
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      borderData: FlBorderData(show: true),
-                                      gridData: const FlGridData(show: true),
-                                      barGroups: _getSortedBarData(
-                                          selectedTimeRange == "Today"
-                                              ? _getTodayBarData()
-                                              : selectedTimeRange == "This Week"
-                                                  ? _getWeeklyBarData()
-                                                  : selectedTimeRange ==
-                                                          "This Month"
-                                                      ? _getMonthlyBarData()
-                                                      : selectedTimeRange ==
-                                                              "This Year"
-                                                          ? _getYearlyBarData()
-                                                          : _getYearlyBarData()),
                                     ),
                                   ),
-                                ),
-                              ],
+                                  Positioned.fill(
+                                    child: SfCartesianChart(
+                                      primaryXAxis: CategoryAxis(
+                                        isVisible: true,
+                                        labelRotation: 0,
+                                        majorGridLines:
+                                            MajorGridLines(width: 0),
+                                        //interval: 1,
+                                      ),
+
+                                      primaryYAxis: NumericAxis(
+                                        isVisible: true,
+                                      ),
+                                      //title: ChartTitle(text: 'Work Hours by Worker'),
+                                      tooltipBehavior: TooltipBehavior(
+                                        enable: true,
+                                        header: '',
+                                        canShowMarker: false,
+                                        format: 'point.x : point.y',
+                                      ),
+                                      series: <CartesianSeries<
+                                          BarChartGroupData, String>>[
+                                        ColumnSeries<BarChartGroupData, String>(
+                                          dataSource: _getSortedBarData(
+                                            selectedTimeRange == "Today"
+                                                ? _getTodayBarData()
+                                                : selectedTimeRange ==
+                                                        "This Week"
+                                                    ? _getWeeklyBarData()
+                                                    : selectedTimeRange ==
+                                                            "This Month"
+                                                        ? _getMonthlyBarData()
+                                                        : selectedTimeRange ==
+                                                                "This Year"
+                                                            ? _getYearlyBarData()
+                                                            : _getYearlyBarData(),
+                                          ),
+                                          xValueMapper:
+                                              (BarChartGroupData data, _) =>
+                                                  _getWorkerName(data.x),
+                                          yValueMapper: (BarChartGroupData data,
+                                                  _) =>
+                                              data.barRods.isNotEmpty
+                                                  ? data.barRods[0].toY
+                                                  : 0, // Get the worked hours from the barRod
+                                          name: 'Worked Hours',
+                                          borderRadius: BorderRadius.all(
+                                              Radius.circular(8)),
+                                          color: Colors.blueAccent,
+                                          width: 0.8,
+                                        ),
+                                      ],
+                                      zoomPanBehavior: _zoomPanBehavior,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                       const SizedBox(
                         height: 30,
@@ -386,13 +436,12 @@ class _DashboardPageState extends State<DashboardPage> {
                       margin: const EdgeInsets.symmetric(
                           horizontal: 50, vertical: 10),
                       child: Padding(
-                        padding: const EdgeInsets.all(20.0),
+                        padding: const EdgeInsets.all(10.0),
                         child: SingleChildScrollView(
                           child: Column(
+                            mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              const SizedBox(height: 10),
-
                               Text(
                                 "Leaderboard $selectedTimeRange",
                                 style: TextStyle(
@@ -400,7 +449,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                   fontSize: 20,
                                 ),
                               ),
-                              const SizedBox(height: 30),
+                              const SizedBox(height: 10),
                               // Get the top 5 workers based on the selected time range
                               Builder(
                                 builder: (context) {
@@ -426,13 +475,14 @@ class _DashboardPageState extends State<DashboardPage> {
                                       ),
                                     );
                                   }
-
+                                  double thisWidth =
+                                      MediaQuery.sizeOf(context).width;
                                   // Display the list of top 5 workers
                                   return Wrap(
-                                    spacing:
-                                        0.0, // Horizontal space between items
-                                    runSpacing:
-                                        10.0, // Vertical space between rows
+                                    spacing: thisWidth == 1920
+                                        ? thisWidth * 0.07
+                                        : thisWidth * 0.04,
+                                    runSpacing: 20.0,
                                     children: top5Workers
                                         .asMap()
                                         .entries
@@ -441,10 +491,6 @@ class _DashboardPageState extends State<DashboardPage> {
                                       final worker = entry.value;
 
                                       return SizedBox(
-                                        width: MediaQuery.of(context)
-                                                .size
-                                                .width /
-                                            8, // Divide equally across the screen width
                                         child: Column(
                                           mainAxisSize: MainAxisSize.min,
                                           crossAxisAlignment:
@@ -455,8 +501,14 @@ class _DashboardPageState extends State<DashboardPage> {
                                               child: Image.asset(
                                                 'lib/assets/images/medal/${index + 1}.png',
                                                 fit: BoxFit.cover,
-                                                height: 100,
-                                                width: 100,
+                                                height:
+                                                    MediaQuery.sizeOf(context)
+                                                            .width *
+                                                        0.07,
+                                                width:
+                                                    MediaQuery.sizeOf(context)
+                                                            .width *
+                                                        0.07,
                                               ),
                                             ),
                                             const SizedBox(
@@ -544,10 +596,12 @@ class _DashboardPageState extends State<DashboardPage> {
       fontSize: 12,
     );
     return SideTitleWidget(
-      axisSide: meta.axisSide,
+      meta: meta,
+      //axisSide: meta.axisSide,
       child: Text(
         _getWorkerName(value.toInt()),
         style: style,
+        softWrap: true,
       ),
     );
   }

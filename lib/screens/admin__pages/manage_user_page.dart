@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:iconly/iconly.dart';
 import 'package:nlrc_rfid_scanner/assets/themeData.dart';
+import 'package:nlrc_rfid_scanner/backend/data/fetch_attendance.dart';
 import 'package:nlrc_rfid_scanner/backend/data/fetch_data.dart';
 import 'package:nlrc_rfid_scanner/backend/data/file_reader.dart';
 import 'package:nlrc_rfid_scanner/main.dart';
@@ -54,7 +55,6 @@ class _ManageUserPageState extends State<ManageUserPage> {
 
       final String data =
           event.logicalKey.keyLabel; // Use keyLabel instead of debugName
-      print(data);
 
       final DateTime currentTime = DateTime.now();
       final Duration timeDifference = currentTime.difference(_lastKeypressTime);
@@ -70,32 +70,39 @@ class _ManageUserPageState extends State<ManageUserPage> {
       if (event.logicalKey == LogicalKeyboardKey.enter) {
         // Ensure RFID data is not empty and greater than 9 characters before processing
         if (_rfidData.isNotEmpty && _rfidData.length >= 9) {
+          print(_rfidData.length);
           String filteredData = _filterRFIDData(_rfidData);
           filteredData = '$filteredData';
+          print(filteredData.length);
+          if (filteredData.length >= 9) {
+            bool isRFIDExists = _checkRFIDExists(filteredData);
+            Navigator.pop(context);
 
-          bool isRFIDExists = _checkRFIDExists(filteredData);
-          Navigator.pop(context);
+            if (isRFIDExists) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                snackBarFailed('RFID Already exists', context),
+              );
+            } else {
+              setState(() {
+                _rfidController.text = filteredData;
+              });
 
-          if (isRFIDExists) {
+              showDialog(
+                context: context,
+                builder: (context) {
+                  return _buildUserFormDialog('Add User', _saveUser);
+                },
+              );
+            }
+
             setState(() {
-              _rfidController.text = filteredData;
+              _rfidData = ''; // Clear RFID data after processing
             });
-
-            showDialog(
-              context: context,
-              builder: (context) {
-                return _buildUserFormDialog('Add User', _saveUser);
-              },
-            );
           } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              snackBarFailed('RFID Already exists', context),
-            );
+            ScaffoldMessenger.of(context).showSnackBar(snackBarFailed(
+                'There must be something wrong with the RFID Scanned. Please try again',
+                context));
           }
-
-          setState(() {
-            _rfidData = ''; // Clear RFID data after processing
-          });
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
               snackBarFailed('RFID data is empty. Please try again', context));
@@ -115,9 +122,9 @@ class _ManageUserPageState extends State<ManageUserPage> {
       _expirationTimer!.cancel(); // Cancel any existing timer
     }
 
-    _expirationTimer = Timer(const Duration(milliseconds: 30), () {
+    _expirationTimer = Timer(const Duration(milliseconds: 100), () {
       if (_rfidData.isNotEmpty) {
-        debugPrint('Expiration timer triggered: Clearing RFID data.');
+        //debugPrint('Expiration timer triggered: Clearing RFID data.');
         setState(() {
           _rfidData = '';
         });
@@ -138,7 +145,7 @@ class _ManageUserPageState extends State<ManageUserPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: Colors.grey[300],
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -178,6 +185,8 @@ class _ManageUserPageState extends State<ManageUserPage> {
         }
 
         final docs = snapshot.data!.docs;
+        docs.sort(
+            (a, b) => a['name'].toString().compareTo(b['name'].toString()));
         return ListView.builder(
           itemCount: docs.length,
           itemBuilder: (context, index) {
@@ -229,7 +238,7 @@ class _ManageUserPageState extends State<ManageUserPage> {
       });
     });
     showDialog(
-        barrierDismissible: true,
+        barrierDismissible: false,
         context: context,
         builder: (context) {
           return Card(
@@ -350,70 +359,68 @@ class _ManageUserPageState extends State<ManageUserPage> {
       builder: (BuildContext context, void Function(void Function()) setState) {
         return Stack(
           children: [
-            Dialog(
-              insetPadding: EdgeInsets.symmetric(
-                horizontal: MediaQuery.sizeOf(context).width * 0.32,
-              ),
+            AlertDialog(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16.0),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
+              title: Center(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              content: Padding(
+                padding: const EdgeInsets.all(10.0),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 10),
                     /* Text(
                       'Profile Picture:',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ), */
-                    SizedBox(height: 10),
-                    Card(
-                      shape: CircleBorder(),
-                      color: Colors.black45,
-                      child: Padding(
-                        padding: const EdgeInsets.all(2.0),
-                        child: _selectedImage != null
-                            ? Image.file(
+                    CircleAvatar(
+                      radius: 75,
+                      backgroundColor: Colors.black45,
+                      child: _selectedImage != null
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(100),
+                              child: Image.file(
                                 _selectedImage!, // Show the selected image
                                 width: 150,
                                 height: 150,
                                 fit: BoxFit.cover,
                                 key: ValueKey<File>(_selectedImage!),
-                              )
-                            : _currentImagePath != null &&
-                                    File(_currentImagePath!).existsSync()
-                                ? Image.file(
+                              ),
+                            )
+                          : _currentImagePath != null &&
+                                  File(_currentImagePath!).existsSync()
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(100),
+                                  child: Image.file(
                                     File(_currentImagePath!),
                                     width: 150,
                                     height: 150,
                                     fit: BoxFit.fill,
-                                  )
-                                : Container(
+                                  ),
+                                )
+                              : ClipRRect(
+                                  child: Image.asset(
+                                    'lib/assets/images/NLRC-WHITE.png', // Default image asset
                                     width: 150,
                                     height: 150,
-                                    child: Image.asset(
-                                      'lib/assets/images/NLRC-WHITE.png', // Default image asset
-                                      width: 150,
-                                      height: 150,
-                                      fit: BoxFit.cover,
-                                    ),
+                                    fit: BoxFit.cover,
                                   ),
-                      ),
+                                ),
                     ),
                     SizedBox(
                       height: 10,
                     ),
                     ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.greenAccent),
+                          backgroundColor: Color.fromARGB(255, 44, 15, 148),
+                        ),
                         onPressed: () async {
                           final picker = ImagePicker();
                           final pickedFile = await picker.pickImage(
@@ -436,46 +443,51 @@ class _ManageUserPageState extends State<ManageUserPage> {
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Icon(
-                              IconlyBold.upload,
-                              color: Colors.white,
-                            ),
                             Text(
                               'Upload Image',
                               style: TextStyle(color: Colors.white),
                             )
                           ],
                         )),
-                    SizedBox(height: 20),
+                    SizedBox(height: 30),
 
                     _buildTextField('RFID Number', _rfidController),
                     _buildTextField('Name', _nameController),
                     _buildTextField('Position', _positionController),
                     _buildTextField('Office', _officeController),
-                    SizedBox(height: 20),
+                    SizedBox(height: 10),
 
                     // Action Buttons
                     Center(
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          ElevatedButton.icon(
-                            icon: Icon(Icons.close),
-                            label: Text('Close'),
+                          ElevatedButton(
+                            child: Text(
+                              'Close',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                             onPressed: () {
                               _clearFormFields();
 
                               Navigator.pop(context);
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blueAccent,
+                              backgroundColor: Colors.redAccent,
                               foregroundColor: Colors.white,
-                              padding: EdgeInsets.symmetric(horizontal: 20),
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 10),
                             ),
                           ),
-                          ElevatedButton.icon(
-                            icon: Icon(Icons.save),
-                            label: Text('Save'),
+                          ElevatedButton(
+                            child: Text(
+                              'Save',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                             onPressed: () async {
                               setState(() {
                                 isLoading = true;
@@ -488,7 +500,8 @@ class _ManageUserPageState extends State<ManageUserPage> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.green,
                               foregroundColor: Colors.white,
-                              padding: EdgeInsets.symmetric(horizontal: 20),
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 10),
                             ),
                           ),
                         ],
@@ -531,25 +544,36 @@ class _ManageUserPageState extends State<ManageUserPage> {
   // Text Field Widget
   Widget _buildTextField(String label, TextEditingController controller) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 20, left: 20, right: 20),
-      child: TextField(
-        controller: controller,
-        readOnly: /* label == 'RFID Number'
-            ? true
-            : */
-            false, //this will make the text field read only if it is an rfid
-        keyboardType:
-            label == 'RFID Number' ? TextInputType.number : TextInputType.text,
-        inputFormatters: label == 'RFID Number'
-            ? [FilteringTextInputFormatter.digitsOnly]
-            : [],
-        decoration: InputDecoration(
-            labelText: label,
-            hintText: label == 'RFID Number'
-                ? 'Scan the RFID to get RFID Number'
-                : null,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(25)),
-            contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 20)),
+      padding: const EdgeInsets.only(
+        bottom: 20,
+      ),
+      child: SizedBox(
+        width: 400,
+        child: TextField(
+          controller: controller,
+          readOnly: /* label == 'RFID Number'
+              ? true
+              : */
+              false, //this will make the text field read only if it is an rfid
+          keyboardType: label == 'RFID Number'
+              ? TextInputType.number
+              : TextInputType.text,
+          inputFormatters: label == 'RFID Number'
+              ? [FilteringTextInputFormatter.digitsOnly]
+              : [],
+          decoration: InputDecoration(
+              labelText: label,
+              hintText: label == 'RFID Number'
+                  ? 'Scan the RFID to get RFID Number'
+                  : null,
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(25)),
+              contentPadding:
+                  EdgeInsets.symmetric(horizontal: 20, vertical: 10)),
+          style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Color.fromARGB(255, 38, 15, 119)),
+        ),
       ),
     );
   }
@@ -590,6 +614,8 @@ class _ManageUserPageState extends State<ManageUserPage> {
           'office': office,
           'imagePath': imagePath,
         }).then((docRef) async {
+          await fetchUsers();
+
           await fetchDataAndGenerateDartFile();
           users = await loadUsers();
 
@@ -605,12 +631,14 @@ class _ManageUserPageState extends State<ManageUserPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             snackBarFailed(error.toString(), context),
           );
+          print(error);
         });
       }
     }).catchError((error) {
       ScaffoldMessenger.of(context).showSnackBar(
         snackBarFailed(error.toString(), context),
       );
+      print(error);
     });
 
     _clearFormFields();
@@ -752,15 +780,32 @@ class _ManageUserPageState extends State<ManageUserPage> {
 
                   // Delete the user document
                   await _firestore.collection('users').doc(docId).delete();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    snackBarSuccess('User deleted successfully!', context),
-                  );
-                  setState(() async {
-                    await fetchDataAndGenerateDartFile();
-                    users = await loadUsers();
 
-                    //fetchUsersFromFirebase(); // Uncomment if needed
-                  });
+                  // Delete attendance records for the user's RFID
+                  final attendanceQuerySnapshot = await _firestore
+                      .collection('user_attendance')
+                      .where('rfid', isEqualTo: rfid)
+                      .get();
+
+                  for (final doc in attendanceQuerySnapshot.docs) {
+                    await _firestore
+                        .collection('user_attendance')
+                        .doc(doc.id)
+                        .delete();
+                  }
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    snackBarSuccess(
+                        'User and attendance records deleted successfully!',
+                        context),
+                  );
+
+                  await fetchUsers();
+
+                  await fetchDataAndGenerateDartFile();
+                  users = await loadUsers();
+
+                  //fetchUsersFromFirebase(); // Uncomment if needed
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     snackBarFailed('User not found!', context),

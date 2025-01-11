@@ -67,20 +67,12 @@ class _CustomDrawerState extends State<CustomDrawer> {
     double cardMargin;
     if (screenWidth > 1500 && screenWidth < 1700) {
       cardMargin = 430;
-      print(cardMargin);
-      print(screenWidth);
     } else if (screenWidth > 1700) {
       cardMargin = 430;
-      print(cardMargin);
-      print(screenWidth);
     } else if (screenWidth < 1500) {
-      cardMargin = screenWidth * 0.285;
-      print(cardMargin);
-      print(screenWidth);
+      cardMargin = 430;
     } else {
-      cardMargin = screenWidth * 0.235;
-      print(cardMargin);
-      print(screenWidth);
+      cardMargin = 430;
     }
 
     return Drawer(
@@ -130,76 +122,88 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         ),
                       ),
                       SizedBox(height: 10),
-                      // Display the users who logged in today
-                      Expanded(
-                        child: ListView.builder(
-                          itemCount: usersLoggedInToday.length,
-                          itemBuilder: (context, index) {
-                            usersLoggedInToday.sort((a, b) => a['name']
-                                .toString()
-                                .compareTo(b['name'].toString()));
+                      if (usersLoggedInToday.isEmpty)
+                        const Center(
+                          child: Text(
+                            "No worker logged in",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        )
+                      else // Display the users who logged in today
+                        Expanded(
+                          child: ListView.builder(
+                            itemCount: usersLoggedInToday.length,
+                            itemBuilder: (context, index) {
+                              usersLoggedInToday.sort((a, b) => a['name']
+                                  .toString()
+                                  .compareTo(b['name'].toString()));
 
-                            final user = usersLoggedInToday[index];
-                            return Column(
-                              children: [
-                                ListTile(
-                                  title: Row(
-                                    children: [
-                                      Icon(
-                                        FontAwesomeIcons.user,
-                                        size: 15,
-                                      ),
-                                      SizedBox(
-                                        width: 10,
-                                      ),
-                                      Text(
-                                        '${user['name']}',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold),
-                                      ),
-                                      Text(
-                                        ' - ',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold),
-                                      ),
-                                      Text(
-                                        '${user['officeType']}',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: user['officeType'] == 'Office'
-                                              ? Colors.green
-                                              : Colors.blueAccent,
-                                          fontStyle: FontStyle.italic,
+                              final user = usersLoggedInToday[index];
+                              return Column(
+                                children: [
+                                  ListTile(
+                                    title: Row(
+                                      children: [
+                                        Icon(
+                                          FontAwesomeIcons.user,
+                                          size: 15,
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                  subtitle: Row(
-                                    children: [
-                                      SizedBox(
-                                        width: 25,
-                                      ),
-                                      Text(
-                                        'Time In: ${user['timeIn']}          Time Out: ${user['timeOut'] == '' ? '--' : user['timeOut']}',
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          height: 0.5,
+                                        SizedBox(
+                                          width: 10,
                                         ),
-                                      ),
-                                    ],
+                                        Text(
+                                          '${user['name']}',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.bold),
+                                        ),
+                                        Text(
+                                          ' - ',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.bold),
+                                        ),
+                                        Text(
+                                          '${user['officeType']}',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color:
+                                                user['officeType'] == 'Office'
+                                                    ? Colors.green
+                                                    : Colors.blueAccent,
+                                            fontStyle: FontStyle.italic,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    subtitle: Row(
+                                      children: [
+                                        SizedBox(
+                                          width: 25,
+                                        ),
+                                        Text(
+                                          'Time In: ${user['timeIn']}          Time Out: ${user['timeOut'] == '' ? '--' : user['timeOut']}',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            height: 0.5,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                SizedBox(
-                                  width: 300,
-                                  child: Divider(
-                                    height: 10,
-                                  ),
-                                )
-                              ],
-                            );
-                          },
+                                  SizedBox(
+                                    width: 300,
+                                    child: Divider(
+                                      height: 10,
+                                    ),
+                                  )
+                                ],
+                              );
+                            },
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ),

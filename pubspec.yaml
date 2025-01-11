@@ -38,13 +38,13 @@ dependencies:
   #dartusbhid: ^1.0.1
   #usb_serial: ^0.5.2
   ffi: ^2.1.3
-  intl: ^0.20.0
+  intl: ^0.19.0
   google_fonts: ^6.2.1
   #desktop_multi_window: ^0.2.0
   #desktop_lifecycle: ^0.1.1
   firebase_core: ^3.4.0
   cloud_firestore: ^5.4.0
-  fl_chart: ^0.69.2
+  fl_chart: ^0.70.1
   iconly: ^1.0.1
   pdf: ^3.10.0
   printing: ^5.12.0
@@ -54,6 +54,7 @@ dependencies:
   font_awesome_flutter: ^10.8.0
   file_picker: ^5.2.0
   month_picker_dialog: ^6.0.2
+  syncfusion_flutter_charts: ^25.2.4
 
 dev_dependencies:
   flutter_test:

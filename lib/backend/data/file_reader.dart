@@ -69,7 +69,6 @@ Future<Map<String, dynamic>?> loadAdmin() async {
 Future<List<Map<String, dynamic>>> loadAnnouncements() async {
   // Get the application's local documents directory
   final directory = await getApplicationCacheDirectory();
-  print(directory.path);
   final file = File('${directory.path}/announcements.json');
   final fileContent = await readFileContent(file);
   // You would typically have a JSON string here, so let's decode it
