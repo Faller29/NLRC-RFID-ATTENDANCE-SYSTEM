@@ -514,12 +514,14 @@ class _DashboardPageState extends State<DashboardPage> {
                                             const SizedBox(
                                                 height:
                                                     5), // Space between the icon and the text
-                                            Text(
-                                              worker['name'],
-                                              style: TextStyle(
+                                            Flexible(
+                                              child: Text(
+                                                worker['name'],
+                                                style: TextStyle(
                                                   fontWeight: FontWeight.bold,
-                                                  fontSize: 16),
-                                              textAlign: TextAlign.center,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                              ),
                                             ),
                                             Text(
                                               "${worker['workHours'].toStringAsFixed(1)} hrs",
@@ -550,23 +552,12 @@ class _DashboardPageState extends State<DashboardPage> {
         onPressed: () async {
           await _fetchDatas();
         },
-        backgroundColor: Colors.greenAccent,
-        foregroundColor: Colors.black87,
-        child: const Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.refresh,
-            ),
-            Text(
-              'Refresh',
-              style: TextStyle(
-                  fontSize: 12, fontWeight: FontWeight.bold, height: 0.5),
-            )
-          ],
+        backgroundColor: Colors.green,
+        foregroundColor: Colors.white,
+        child: Icon(
+          Icons.refresh,
         ),
+        tooltip: 'Refresh Data',
       ),
     );
   }

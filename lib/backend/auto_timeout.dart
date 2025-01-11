@@ -28,7 +28,7 @@ Future<void> updateNullTimeOut() async {
       if (data['timeOut'] == null && recordDate.isBefore(today)) {
         // Set timeOut to 4:00 PM of the record date
         final newTimeOut = DateTime(
-            recordDate.year, recordDate.month, recordDate.day, 16, 0, 0);
+            recordDate.year, recordDate.month, recordDate.day, 17, 0, 0);
 
         final firebaseTimeOut = Timestamp.fromDate(newTimeOut);
 

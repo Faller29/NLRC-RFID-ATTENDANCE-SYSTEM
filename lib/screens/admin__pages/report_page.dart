@@ -736,6 +736,7 @@ class _ReportPage extends State<ReportPage> {
     try {
       QuerySnapshot querySnapshot = await FirebaseFirestore.instance
           .collection('users')
+          .orderBy('name')
           .get(); // Get all documents in the 'users' collection
 
       // Create a name-to-rfid mapping and a list of names
@@ -861,6 +862,26 @@ class _ReportPage extends State<ReportPage> {
     );
 
     try {
+      final attendanceData = await fetchAttendanceData2();
+
+      // Check if attendance data is empty
+      if (attendanceData == null || attendanceData.isEmpty) {
+        if (isLoadingDialogOpen) {
+          Navigator.pop(context); // Close the loading dialog
+          isLoadingDialogOpen = false; // Reset the flag
+        }
+
+        // Show a snackbar or dialog to notify the user
+        ScaffoldMessenger.of(context).showSnackBar(
+          snackBarFailed(
+            'No records found to generate PDF',
+            context,
+          ),
+        );
+
+        return; // Stop further execution
+      }
+
       final pdf = pw.Document();
       final ByteData imageData =
           await rootBundle.load('lib/assets/images/NLRC.jpg');
@@ -877,7 +898,6 @@ class _ReportPage extends State<ReportPage> {
       final logo = pw.MemoryImage(imageBytes);
       final logo1 = pw.MemoryImage(imageBytes1);
       final logo2 = pw.MemoryImage(imageBytes2);
-      final attendanceData = await fetchAttendanceData2();
 
       // Ensure the employee name is fetched using RFID
       String employeeName = _selectedName ?? 'Employee Name';
@@ -1160,6 +1180,26 @@ class _ReportPage extends State<ReportPage> {
     );
 
     try {
+      final attendanceData = await fetchAttendanceDataToday();
+
+      // Check if attendance data is empty
+      if (attendanceData == null || attendanceData.isEmpty) {
+        if (isLoadingDialogOpen) {
+          Navigator.pop(context); // Close the loading dialog
+          isLoadingDialogOpen = false; // Reset the flag
+        }
+
+        // Show a snackbar or dialog to notify the user
+        ScaffoldMessenger.of(context).showSnackBar(
+          snackBarFailed(
+            'No records found to generate PDF',
+            context,
+          ),
+        );
+
+        return; // Stop further execution
+      }
+
       final pdf = pw.Document();
       final ByteData imageData =
           await rootBundle.load('lib/assets/images/NLRC.jpg');
@@ -1176,7 +1216,6 @@ class _ReportPage extends State<ReportPage> {
       final logo = pw.MemoryImage(imageBytes);
       final logo1 = pw.MemoryImage(imageBytes1);
       final logo2 = pw.MemoryImage(imageBytes2);
-      final attendanceData = await fetchAttendanceDataToday();
 
       const int rowsPerPage =
           23; // Adjust based on your layout and desired number of rows per page
@@ -1419,6 +1458,26 @@ class _ReportPage extends State<ReportPage> {
     );
 
     try {
+      final attendanceData = await fetchAttendanceData1();
+
+      // Check if attendance data is empty
+      if (attendanceData == null || attendanceData.isEmpty) {
+        if (isLoadingDialogOpen) {
+          Navigator.pop(context); // Close the loading dialog
+          isLoadingDialogOpen = false; // Reset the flag
+        }
+
+        // Show a snackbar or dialog to notify the user
+        ScaffoldMessenger.of(context).showSnackBar(
+          snackBarFailed(
+            'No records found to generate PDF',
+            context,
+          ),
+        );
+
+        return; // Stop further execution
+      }
+
       final pdf = pw.Document();
       final ByteData imageData =
           await rootBundle.load('lib/assets/images/NLRC.jpg');
@@ -1435,7 +1494,6 @@ class _ReportPage extends State<ReportPage> {
       final logo = pw.MemoryImage(imageBytes);
       final logo1 = pw.MemoryImage(imageBytes1);
       final logo2 = pw.MemoryImage(imageBytes2);
-      final attendanceData = await fetchAttendanceData1();
 
       const int rowsPerPage =
           23; // Adjust based on your layout and desired number of rows per page

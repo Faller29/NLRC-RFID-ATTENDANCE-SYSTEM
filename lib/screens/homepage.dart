@@ -221,7 +221,7 @@ class _MyHomePageState extends State<MyHomePage> {
       showDialog(
         context: context,
         barrierDismissible:
-            false, // Prevent closing the modal by tapping outside
+            true, // Prevent closing the modal by tapping outside
         builder: (BuildContext context) {
           return ScannedModal(
             rfidData: rfidData,
@@ -286,7 +286,7 @@ class _MyHomePageState extends State<MyHomePage> {
       right: 10,
       child: ConstrainedBox(
         constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(context).height, maxWidth: 300),
+            maxHeight: MediaQuery.sizeOf(context).height - 60, maxWidth: 200),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -317,10 +317,12 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: Stack(
                   children: [
                     Container(
-                      height: 50,
-                      width: 200,
                       alignment: Alignment.center,
-                      margin: const EdgeInsets.only(bottom: 10),
+                      margin: const EdgeInsets.only(
+                        top: 20,
+                        bottom: 10,
+                      ),
+                      height: 60,
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
@@ -339,6 +341,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           style: TextStyle(
                             color: Colors.white,
                           ),
+                          textAlign: TextAlign.center,
                         ),
                       ),
                     ),

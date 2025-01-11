@@ -29,5 +29,6 @@ SnackBar snackBarSuccess(String text, BuildContext context) {
       textAlign: TextAlign.center,
       style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
     ),
+    duration: Duration(seconds: 3),
   );
 }

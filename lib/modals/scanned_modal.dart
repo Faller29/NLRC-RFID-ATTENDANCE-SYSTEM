@@ -423,8 +423,7 @@ class _ScannedModalState extends State<ScannedModal> {
                                 style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.greenAccent),
                                 onPressed: () async {
-                                  if (_selectedJobType == null &&
-                                      timeIn == null) {
+                                  if (_selectedJobType == null) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       snackBarFailed(
                                           'Please select Job Field', context),

@@ -46,9 +46,10 @@ class _LoginWidgetState extends State<LoginWidget> {
           ScaffoldMessenger.of(context).showSnackBar(
             snackBarSuccess('Login successful', context),
           );
-
+          Navigator.pop(context);
+          Navigator.pop(context);
           // Navigate to the AdminPage
-          Navigator.pushReplacement(
+          Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => AdminPage()),
           );

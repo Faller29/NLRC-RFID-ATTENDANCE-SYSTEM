@@ -160,37 +160,36 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                           style: TextStyle(
                                               fontWeight: FontWeight.bold),
                                         ),
-                                        Text(
-                                          ' - ',
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.bold),
-                                        ),
-                                        Text(
-                                          '${user['officeType']}',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            color:
-                                                user['officeType'] == 'Office'
-                                                    ? Colors.green
-                                                    : Colors.blueAccent,
-                                            fontStyle: FontStyle.italic,
-                                          ),
-                                        ),
                                       ],
                                     ),
-                                    subtitle: Row(
-                                      children: [
-                                        SizedBox(
-                                          width: 25,
-                                        ),
-                                        Text(
-                                          'Time In: ${user['timeIn']}          Time Out: ${user['timeOut'] == '' ? '--' : user['timeOut']}',
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            height: 0.5,
+                                    subtitle: Padding(
+                                      padding: const EdgeInsets.only(left: 25),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            '${user['officeType']}',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color:
+                                                  user['officeType'] == 'Office'
+                                                      ? Colors.green
+                                                      : Colors.blueAccent,
+                                            ),
                                           ),
-                                        ),
-                                      ],
+                                          Row(
+                                            children: [
+                                              Text(
+                                                'Time In: ${user['timeIn']}          Time Out: ${user['timeOut'] == '' ? '--' : user['timeOut']}',
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                   SizedBox(
