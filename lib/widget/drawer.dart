@@ -155,10 +155,12 @@ class _CustomDrawerState extends State<CustomDrawer> {
                                         SizedBox(
                                           width: 10,
                                         ),
-                                        Text(
-                                          '${user['name']}',
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.bold),
+                                        Flexible(
+                                          child: Text(
+                                            '${user['name']}',
+                                            style: TextStyle(
+                                                fontWeight: FontWeight.bold),
+                                          ),
                                         ),
                                       ],
                                     ),

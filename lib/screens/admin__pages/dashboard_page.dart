@@ -48,6 +48,12 @@ class _DashboardPageState extends State<DashboardPage> {
     }); */
   }
 
+  @override
+  void dispose() {
+    isLoading = false;
+    super.dispose();
+  }
+
   String getFormattedDate() {
     final now = DateTime.now();
     final formattedDate =
@@ -264,7 +270,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                   height: 20,
                                 ),
                                 Text(
-                                  'Fetching Data from Database. Please wait',
+                                  'Fetching Data from Database. Please wait as this may take a while',
                                   style: TextStyle(
                                     color: Color(0xff68737d),
                                   ),

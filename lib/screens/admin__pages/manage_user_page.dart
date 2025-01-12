@@ -28,6 +28,8 @@ class _ManageUserPageState extends State<ManageUserPage> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _positionController = TextEditingController();
   final TextEditingController _officeController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
+  String _searchText = '';
   String? _userIdToEdit;
   DateTime _lastKeypressTime = DateTime.now();
   String _rfidData = '';
@@ -37,6 +39,7 @@ class _ManageUserPageState extends State<ManageUserPage> {
   String? _currentImagePath; // Holds the path to the current image for editing
   bool pickedImage = false;
   bool isLoading = false;
+
   @override
   void initState() {
     super.initState();
@@ -160,6 +163,25 @@ class _ManageUserPageState extends State<ManageUserPage> {
               ),
             ),
             SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 10),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (value) {
+                  setState(() {
+                    _searchText = value.toLowerCase();
+                  });
+                },
+                decoration: InputDecoration(
+                  labelText: 'Search Employee',
+                  hintText: 'Enter a name, position, office or RFID',
+                  prefixIcon: Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
             Expanded(
               child: _buildUserList(),
             ),
@@ -178,33 +200,51 @@ class _ManageUserPageState extends State<ManageUserPage> {
   // User List Display
   Widget _buildUserList() {
     return StreamBuilder<QuerySnapshot>(
-      stream: _firestore.collection('users').snapshots(),
+      stream: FirebaseFirestore.instance.collection('users').snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return Center(child: CircularProgressIndicator());
         }
 
         final docs = snapshot.data!.docs;
+
+        // Sort documents by name
         docs.sort(
-            (a, b) => a['name'].toString().compareTo(b['name'].toString()));
+          (a, b) => a['name'].toString().compareTo(b['name'].toString()),
+        );
+
+        // Filter documents based on search text
+        final filteredDocs = docs.where((doc) {
+          final user = doc.data() as Map<String, dynamic>;
+          final name = user['name'].toString().toLowerCase();
+          final position = user['position'].toString().toLowerCase();
+          final office = user['office'].toString().toLowerCase();
+          final rfid = user['rfid'].toString();
+
+          return name.contains(_searchText) ||
+              rfid.contains(_searchText) ||
+              position.contains(_searchText) ||
+              office.contains(_searchText);
+        }).toList();
+
         return ListView.builder(
-          itemCount: docs.length,
+          itemCount: filteredDocs.length,
           itemBuilder: (context, index) {
-            final user = docs[index].data() as Map<String, dynamic>;
+            final user = filteredDocs[index].data() as Map<String, dynamic>;
             return Card(
               elevation: 4,
               shadowColor: Color.fromARGB(255, 44, 15, 148),
               margin: EdgeInsets.symmetric(vertical: 8, horizontal: 50),
               child: ListTile(
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16)),
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 tileColor: Colors.white,
                 dense: false,
                 contentPadding: EdgeInsets.all(10),
                 leading: CircleAvatar(
                   backgroundColor: Colors.greenAccent,
-                  child:
-                      Text(user['name'][0]), // Use the first letter of the name
+                  child: Text(user['name'][0]),
                 ),
                 title: Text(user['name']),
                 subtitle: Text('${user['position']} at ${user['office']}'),
@@ -515,23 +555,59 @@ class _ManageUserPageState extends State<ManageUserPage> {
               Positioned.fill(
                   child: Container(
                 color: Color.fromARGB(255, 37, 26, 196).withOpacity(0.3),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.center,
+                child: Stack(
                   children: [
-                    CircularProgressIndicator(
-                      color: Colors.white,
+                    Center(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircularProgressIndicator(
+                            color: Colors.white,
+                          ),
+                          SizedBox(
+                            height: 10,
+                          ),
+                          Text(
+                            'Processing...',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18),
+                          ),
+                          Text(
+                            'Taking too long? check your network connection and hit the Close button',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              height: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    SizedBox(
-                      height: 10,
-                    ),
-                    Text(
-                      'Processing...',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18),
-                    ),
+                    Positioned(
+                      right: 20,
+                      top: 20,
+                      child: Tooltip(
+                        message:
+                            'Closes the dialog and let the system process it later when internet reconnects',
+                        child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              foregroundColor: Colors.white,
+                            ),
+                            onPressed: () {
+                              setState(
+                                () {
+                                  Navigator.pop(context);
+                                  isLoading = false;
+                                },
+                              );
+                            },
+                            child: Text('Close')),
+                      ),
+                    )
                   ],
                 ),
               ))
@@ -638,7 +714,6 @@ class _ManageUserPageState extends State<ManageUserPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         snackBarFailed(error.toString(), context),
       );
-      print(error);
     });
 
     _clearFormFields();
@@ -697,7 +772,10 @@ class _ManageUserPageState extends State<ManageUserPage> {
           .get();
 
       for (var doc in userAttendanceSnapshot.docs) {
-        await doc.reference.update({'rfid': rfid});
+        await doc.reference.update({
+          'rfid': rfid,
+          'name': name,
+        });
       }
 
       // Update total hours in user_total_hours collection
@@ -709,6 +787,8 @@ class _ManageUserPageState extends State<ManageUserPage> {
       for (var doc in userTotalHoursSnapshot.docs) {
         await doc.reference.update({'rfid': rfid});
       }
+      await fetchAttendance();
+      attendance = await loadAttendance();
 
       await fetchDataAndGenerateDartFile();
       users = await loadUsers();
@@ -801,6 +881,7 @@ class _ManageUserPageState extends State<ManageUserPage> {
                   );
 
                   await fetchUsers();
+                  await fetchLoggedUsers();
 
                   await fetchDataAndGenerateDartFile();
                   users = await loadUsers();

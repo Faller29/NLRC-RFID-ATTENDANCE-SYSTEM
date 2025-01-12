@@ -40,11 +40,6 @@ class _AdminPageState extends State<AdminPage> {
   }
 
   @override
-  void dispose() {
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color.fromARGB(255, 221, 221, 221),

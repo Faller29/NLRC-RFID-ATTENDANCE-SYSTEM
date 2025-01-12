@@ -160,29 +160,29 @@ class _ScannedModalState extends State<ScannedModal> {
                                       ),
                                       color:
                                           Colors.blueAccent.withOpacity(0.2)),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(5.0),
-                                    child: widget.userData['imagePath'] !=
-                                                null &&
-                                            File(widget.userData['imagePath']!)
-                                                .existsSync()
-                                        ? Image.file(
+                                  child: widget.userData['imagePath'] != null &&
+                                          File(widget.userData['imagePath']!)
+                                              .existsSync()
+                                      ? ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                          child: Image.file(
                                             File(widget.userData['imagePath']!),
                                             width: 150,
                                             height: 150,
                                             fit: BoxFit.fill,
-                                          )
-                                        : Container(
+                                          ),
+                                        )
+                                      : Container(
+                                          width: 150,
+                                          height: 150,
+                                          child: Image.asset(
+                                            'lib/assets/images/NLRC-WHITE.png', // Default image asset
                                             width: 150,
                                             height: 150,
-                                            child: Image.asset(
-                                              'lib/assets/images/NLRC-WHITE.png', // Default image asset
-                                              width: 150,
-                                              height: 150,
-                                              fit: BoxFit.cover,
-                                            ),
+                                            fit: BoxFit.cover,
                                           ),
-                                  ),
+                                        ),
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -475,31 +475,69 @@ class _ScannedModalState extends State<ScannedModal> {
           ),
         ),
         if (isLoading)
-          Container(
+          Positioned.fill(
+              child: Container(
             color: Color.fromARGB(255, 37, 26, 196).withOpacity(0.3),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(
-                    color: Colors.white,
+            child: Stack(
+              children: [
+                Center(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(
+                        color: Colors.white,
+                      ),
+                      SizedBox(
+                        height: 10,
+                      ),
+                      Text(
+                        'Saving Attendance...',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 24,
+                          decoration: TextDecoration.none,
+                        ),
+                      ),
+                      Text(
+                        'Taking too long? check your network connection and click the Close button',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          height: 0.9,
+                          fontWeight: FontWeight.w500,
+                          decoration: TextDecoration.none,
+                        ),
+                      ),
+                    ],
                   ),
-                  SizedBox(
-                    height: 10,
+                ),
+                Positioned(
+                  right: 20,
+                  top: 20,
+                  child: Tooltip(
+                    message:
+                        'Closes the dialog and let the system process it later when internet reconnects',
+                    child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: () {
+                          setState(
+                            () {
+                              Navigator.pop(context);
+                              isLoading = false;
+                            },
+                          );
+                        },
+                        child: Text('Close')),
                   ),
-                  Text(
-                    'Saving Attendance',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      decoration: TextDecoration.none,
-                    ),
-                  ),
-                ],
-              ),
+                )
+              ],
             ),
-          ),
+          ))
       ],
     );
   }
