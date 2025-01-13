@@ -240,8 +240,13 @@ Future<void> fetchAnnouncements() async {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   try {
+    DateTime today = DateTime.now();
+    DateTime startOfDay = DateTime(today.year, today.month, today.day);
     // Fetch announcements data from Firebase Firestore
-    QuerySnapshot snapshot = await _firestore.collection('announcements').get();
+    QuerySnapshot snapshot = await _firestore
+        .collection('announcements')
+        .where('startDate', isLessThanOrEqualTo: Timestamp.fromDate(startOfDay))
+        .get();
 
     // Map the fetched data to a list of announcement maps
     final List<Announcement> announcementList = snapshot.docs.map((doc) {

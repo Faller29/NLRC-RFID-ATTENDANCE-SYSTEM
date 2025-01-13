@@ -178,7 +178,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   bool _isRFIDInput(String data, Duration timeDifference) {
     // Check if the input is part of an RFID scan
-    return timeDifference.inMilliseconds < 30 && data.length >= 1;
+    return timeDifference.inMilliseconds < 100 && data.length >= 1;
   }
 
 // Filter non-numeric characters from RFID data
@@ -192,7 +192,7 @@ class _MyHomePageState extends State<MyHomePage> {
       _expirationTimer!.cancel(); // Cancel any existing timer
     }
 
-    _expirationTimer = Timer(const Duration(milliseconds: 300), () {
+    _expirationTimer = Timer(const Duration(milliseconds: 500), () {
       if (_rfidData.isNotEmpty) {
         debugPrint('Expiration timer triggered: Clearing RFID data.');
         setState(() {
@@ -468,7 +468,17 @@ class _MyHomePageState extends State<MyHomePage> {
           Center(
             child: ClockWidget(),
           ),
-          if (announcementIsOn)
+          Positioned(
+              left: 10,
+              bottom: 10,
+              child: Text(
+                'Credits: JP Faller, R Gutierrez, JS Sapallo',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white30,
+                ),
+              )),
+          if (announcementIsOn && adminAnnouncement.length != 0)
             Positioned(
                 child: SizedBox(
                     width: 400,
@@ -534,9 +544,6 @@ class _MyHomePageState extends State<MyHomePage> {
         }
         if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
-        }
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return Center(child: Text('No announcements available.'));
         }
 
         // Convert Firestore data into the format used by AnnouncementsWidget

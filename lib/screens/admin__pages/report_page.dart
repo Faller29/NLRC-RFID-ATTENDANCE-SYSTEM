@@ -121,15 +121,19 @@ class _ReportPage extends State<ReportPage> {
   void _updateAttendance() async {
     final timeInText = _timeInController.text.trim();
     final timeOutText = _timeOutController.text.trim();
-
+    DateTime? timeOut;
     try {
       // Parse the input times
       final timeIn = DateFormat('hh:mm a').parse(timeInText);
-      final timeOut = DateFormat('hh:mm a').parse(timeOutText);
-
-      if (timeIn == null || timeOut == null) {
-        throw FormatException("Invalid time format");
+      print(timeOutText);
+      if (timeOutText.isNotEmpty) {
+        timeOut = DateFormat('hh:mm a').parse(timeOutText);
+      } else {
+        timeOut = null;
       }
+      /* if (timeIn == null || timeOut == null) {
+        throw FormatException("Invalid time format");
+      } */
 
       // Fetch the attendance document by `rfid` and `date`
       final attendanceQuery = await FirebaseFirestore.instance
@@ -162,30 +166,38 @@ class _ReportPage extends State<ReportPage> {
         timeIn.minute,
       );
 
-      final updatedTimeOut = DateTime(
-        existingTimeIn.year,
-        existingTimeIn.month,
-        existingTimeIn.day,
-        timeOut.hour,
-        timeOut.minute,
-      );
-
-      // Validate that Time In is before Time Out
-      if (updatedTimeIn.isAfter(updatedTimeOut)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          snackBarFailed('Time In must be before Time Out.', context),
+      if (timeOut != null) {
+        final updatedTimeOut = DateTime(
+          existingTimeIn.year,
+          existingTimeIn.month,
+          existingTimeIn.day,
+          timeOut!.hour,
+          timeOut!.minute,
         );
-        return;
+        if (updatedTimeIn.isAfter(updatedTimeOut)) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            snackBarFailed('Time In must be before Time Out.', context),
+          );
+          return;
+        }
+        await FirebaseFirestore.instance
+            .collection('user_attendance')
+            .doc(attendanceDoc.id) // Use the document ID from the query
+            .update({
+          'timeIn': Timestamp.fromDate(updatedTimeIn),
+          'timeOut': Timestamp.fromDate(updatedTimeOut),
+        });
+      } else {
+        await FirebaseFirestore.instance
+            .collection('user_attendance')
+            .doc(attendanceDoc.id) // Use the document ID from the query
+            .update({
+          'timeIn': Timestamp.fromDate(updatedTimeIn),
+        });
       }
+      // Validate that Time In is before Time Out
 
       // Update the Firestore document
-      await FirebaseFirestore.instance
-          .collection('user_attendance')
-          .doc(attendanceDoc.id) // Use the document ID from the query
-          .update({
-        'timeIn': Timestamp.fromDate(updatedTimeIn),
-        'timeOut': Timestamp.fromDate(updatedTimeOut),
-      });
 
       // Trigger a UI update
       setState(() {

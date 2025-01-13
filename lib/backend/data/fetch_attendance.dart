@@ -107,9 +107,9 @@ Future<void> fetchAttendanceData() async {
     }
 
     // Fetch additional data for weekly, monthly, and yearly attendance
-    await _fetchWeeklyAttendanceData();
-    await _fetchMonthlyAttendanceData();
-    await fetchYearlyAttendanceData();
+    _fetchWeeklyAttendanceData();
+    _fetchMonthlyAttendanceData();
+    fetchYearlyAttendanceData();
   } catch (e) {
     debugPrint('Error fetching attendance data: $e');
   }
@@ -278,7 +278,6 @@ Future<void> fetchYearlyAttendanceData() async {
       // Store the total yearly hours for the user
       yearlyWorkHours[rfid] = totalYearlyHours;
     }
-
     isLoading = false; // Set loading state to false
   } catch (e) {
     debugPrint('Error fetching yearly attendance data: $e');

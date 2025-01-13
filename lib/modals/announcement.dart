@@ -129,6 +129,8 @@ Widget _buildEditForm(BuildContext context) {
   return StatefulBuilder(
     builder: (BuildContext context, setState) {
       return Column(
+        mainAxisSize: MainAxisSize.max,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           const SizedBox(height: 5),
           TextField(
@@ -231,7 +233,7 @@ Future<DateTime> _selectDate(BuildContext context, DateTime currentDate) async {
   DateTime? pickedDate = await showDatePicker(
     context: context,
     initialDate: currentDate,
-    firstDate: DateTime(2000),
+    firstDate: DateTime.now(),
     lastDate: DateTime(2101),
   );
   return pickedDate ?? currentDate;

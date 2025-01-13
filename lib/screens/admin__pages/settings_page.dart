@@ -114,7 +114,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final selectedDate = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
+      firstDate: DateTime.now(),
       lastDate: DateTime(2100),
     );
 
@@ -548,14 +548,17 @@ class _SettingsPageState extends State<SettingsPage> {
     String formattedTitle = toSentenceCase(_titleController.text.trim());
     String formattedAnnouncement =
         toSentenceCase(_announcementController.text.trim());
-
+    DateTime thisStartDate =
+        DateTime(_startDate!.year, _startDate!.month, _startDate!.day);
+    DateTime thisEndDate =
+        DateTime(_startDate!.year, _startDate!.month, _startDate!.day);
     // Save to Firestore with generated ID
     final announcement = {
       'title': formattedTitle,
       'announcement': formattedAnnouncement,
-      'startDate': _startDate,
-      'endDate': _endDate,
-      'createdAt': DateTime.now(),
+      'startDate': thisStartDate,
+      'endDate': thisEndDate,
+      'createdAt': _startDate,
     };
 
     try {
@@ -563,10 +566,8 @@ class _SettingsPageState extends State<SettingsPage> {
       await FirebaseFirestore.instance
           .collection('announcements')
           .add(announcement); // Add document with generated ID
-      setState(() async {
-        await fetchAnnouncements();
-        adminAnnouncement = await loadAnnouncements();
-      });
+      await fetchAnnouncements();
+      adminAnnouncement = await loadAnnouncements();
 
       ScaffoldMessenger.of(context).showSnackBar(
         snackBarSuccess('Announcement posted successfully!', context),
