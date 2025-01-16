@@ -168,7 +168,6 @@ Future<void> checkConnectivity() async {
       .timeout(const Duration(seconds: 5), onTimeout: () {
     throw TimeoutException("Internet check timed out");
   });
-
   if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
     await updateNullTimeOut();
     await deleteExpiredAnnouncements();

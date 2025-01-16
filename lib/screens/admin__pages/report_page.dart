@@ -28,7 +28,7 @@ class _ReportPage extends State<ReportPage> {
 
   DateTimeRange? selectedDateRange;
   bool isEditMode = false; // Add this state variable
-
+  int editClicks = 0;
   @override
   void initState() {
     super.initState();
@@ -137,7 +137,7 @@ class _ReportPage extends State<ReportPage> {
 
       // Fetch the attendance document by `rfid` and `date`
       final attendanceQuery = await FirebaseFirestore.instance
-          .collection('user_attendance')
+          .collection('user_attendances')
           .where('rfid',
               isEqualTo: _userIdToEdit) // RFID as the unique identifier
           .where('date', isEqualTo: _selectedDateToEdit) // Selected date
@@ -181,7 +181,7 @@ class _ReportPage extends State<ReportPage> {
           return;
         }
         await FirebaseFirestore.instance
-            .collection('user_attendance')
+            .collection('user_attendances')
             .doc(attendanceDoc.id) // Use the document ID from the query
             .update({
           'timeIn': Timestamp.fromDate(updatedTimeIn),
@@ -189,7 +189,7 @@ class _ReportPage extends State<ReportPage> {
         });
       } else {
         await FirebaseFirestore.instance
-            .collection('user_attendance')
+            .collection('user_attendances')
             .doc(attendanceDoc.id) // Use the document ID from the query
             .update({
           'timeIn': Timestamp.fromDate(updatedTimeIn),
@@ -473,12 +473,13 @@ class _ReportPage extends State<ReportPage> {
         // Format the current date in "MM_dd_yyyy"
         String formattedDate = DateFormat('MM_dd_yyyy').format(currentDate);
 
-        // Reference to the `user_attendance` collection
+        // Reference to the `user_attendances` collection
         CollectionReference userAttendanceCollection =
-            FirebaseFirestore.instance.collection('user_attendance');
+            FirebaseFirestore.instance.collection('user_attendances');
 
-        // Fetch all documents in the `user_attendance` collection
-        QuerySnapshot snapshot = await userAttendanceCollection.get();
+        // Fetch all documents in the `user_attendances` collection
+        QuerySnapshot snapshot =
+            await userAttendanceCollection.orderBy('name').get();
 
         for (var doc in snapshot.docs) {
           Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
@@ -591,12 +592,13 @@ class _ReportPage extends State<ReportPage> {
       String selectedDateFormatted =
           DateFormat('MM_dd_yyyy').format(selectedDate);
 
-      // Reference to the `user_attendance` collection
+      // Reference to the `user_attendances` collection
       CollectionReference userAttendanceCollection =
-          FirebaseFirestore.instance.collection('user_attendance');
+          FirebaseFirestore.instance.collection('user_attendances');
 
-      // Fetch all documents in the `user_attendance` collection
-      QuerySnapshot userSnapshots = await userAttendanceCollection.get();
+      // Fetch all documents in the `user_attendances` collection
+      QuerySnapshot userSnapshots =
+          await userAttendanceCollection.orderBy('name').get();
 
       // Initialize the attendance data list
       List<Map<String, String>> attendanceData = [];
@@ -672,11 +674,11 @@ class _ReportPage extends State<ReportPage> {
       String selectedDateFormatted =
           DateFormat('MM_dd_yyyy').format(selectedDate1!);
 
-      // Reference to the `user_attendance` collection
+      // Reference to the `user_attendances` collection
       CollectionReference userAttendanceCollection =
-          FirebaseFirestore.instance.collection('user_attendance');
+          FirebaseFirestore.instance.collection('user_attendances');
 
-      // Fetch all documents in the `user_attendance` collection
+      // Fetch all documents in the `user_attendances` collection
       QuerySnapshot userSnapshots = await userAttendanceCollection.get();
 
       // Initialize the attendance data list
@@ -784,9 +786,9 @@ class _ReportPage extends State<ReportPage> {
           DateTime(selectedMonth!.year, selectedMonth!.month, day),
         );
 
-        // Reference to the user_attendance collection
+        // Reference to the user_attendances collection
         CollectionReference userAttendanceCollection =
-            FirebaseFirestore.instance.collection('user_attendance');
+            FirebaseFirestore.instance.collection('user_attendances');
 
         // Fetch documents matching the formatted date and RFID
         QuerySnapshot snapshot = await userAttendanceCollection
@@ -2297,7 +2299,7 @@ class _ReportPage extends State<ReportPage> {
                                               date, // Ensure the date is non-null
                                             );
                                           },
-                                          tooltip: 'Edit Time In & Time Out',
+                                          /* tooltip: 'Edit Time In & Time Out', */
                                         ),
                                       ),
                                   ],
@@ -2319,19 +2321,29 @@ class _ReportPage extends State<ReportPage> {
               width: 80,
               height: 80,
               child: FloatingActionButton(
+                mouseCursor: SystemMouseCursors.basic,
                 onPressed: () {
                   setState(() {
-                    isEditMode = !isEditMode; // Toggle edit mode
+                    editClicks++;
+                    if (isEditMode && editClicks == 2) {
+                      isEditMode = !isEditMode;
+                    }
+                    if (editClicks == 8) {
+                      isEditMode = !isEditMode; // Toggle edit mode
+                      editClicks = 0;
+                    }
+
+                    print(editClicks);
                   });
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  /* ScaffoldMessenger.of(context).showSnackBar(
                     snackBarSuccess(
                       isEditMode ? 'Edit Mode Enabled' : 'Edit Mode Disabled',
                       context,
                     ),
-                  );
+                  ); */
                 },
                 backgroundColor: Colors.transparent,
-                tooltip: 'Turn On/Off Edit Mode',
+                /* tooltip: 'Turn On/Off Edit Mode', */
                 shape: const CircleBorder(),
                 child: Container(
                   width: double.infinity,

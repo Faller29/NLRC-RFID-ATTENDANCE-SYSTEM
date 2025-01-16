@@ -367,8 +367,10 @@ class _DashboardPageState extends State<DashboardPage> {
                                                   ? data.barRods[0].toY
                                                   : 0, // Get the worked hours from the barRod
                                           name: 'Worked Hours',
-                                          borderRadius: BorderRadius.all(
-                                              Radius.circular(8)),
+                                          borderRadius: BorderRadius.only(
+                                            topLeft: Radius.circular(8),
+                                            topRight: Radius.circular(8),
+                                          ),
                                           color: Colors.blueAccent,
                                           width: 0.8,
                                         ),

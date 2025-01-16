@@ -132,9 +132,9 @@ Future<void> fetchAttendance() async {
   final todayDate = DateFormat('MM_dd_yyyy').format(DateTime.now());
 
   try {
-    // Fetch user attendance data for today from the user_attendance collection
+    // Fetch user attendance data for today from the user_attendances collection
     QuerySnapshot snapshot = await _firestore
-        .collection('user_attendance')
+        .collection('user_attendances')
         .where('date', isEqualTo: todayDate) // Filter by today's date
         .get();
 

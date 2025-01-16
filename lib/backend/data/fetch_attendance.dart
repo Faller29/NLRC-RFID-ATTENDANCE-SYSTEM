@@ -40,8 +40,8 @@ Future<void> fetchLoggedUsers() async {
     final todayDate =
         DateFormat('MM_dd_yyyy').format(today); // Format: 12_08_2024
 
-    // Reference to the new user_attendance collection
-    final attendanceRef = firestore.collection('user_attendance');
+    // Reference to the new user_attendances collection
+    final attendanceRef = firestore.collection('user_attendances');
 
     // Fetch attendance records for today's date
     final snapshot =
@@ -75,9 +75,9 @@ Future<void> fetchAttendanceData() async {
       final userId = user['rfid'];
       double workedHours = 0;
 
-      // Query the user_attendance collection for today's date
+      // Query the user_attendances collection for today's date
       final attendanceRef = firestore
-          .collection('user_attendance')
+          .collection('user_attendances')
           .where('rfid',
               isEqualTo:
                   userId) // Ensure only the current user's attendance is fetched
@@ -127,14 +127,14 @@ Future<void> _fetchWeeklyAttendanceData() async {
     final weekStartDate = DateFormat('MM_dd_yyyy').format(weekStart);
     final weekEndDate = DateFormat('MM_dd_yyyy').format(weekEnd);
 
-    // Reference to the user_attendance collection
+    // Reference to the user_attendances collection
     for (var user in numberOfUsers) {
       final rfid = user['rfid'];
       double totalWeeklyHours = 0;
 
       // Query attendance records for the user across the entire year by date range
       final yearlyAttendanceRef = firestore
-          .collection('user_attendance')
+          .collection('user_attendances')
           .where('rfid', isEqualTo: rfid) // Filter by rfid
           .where('date',
               isGreaterThanOrEqualTo: weekStartDate) // Start of the year
@@ -202,7 +202,7 @@ Future<void> _fetchMonthlyAttendanceData() async {
 
       // Query attendance records for the user across the entire year by date range
       final yearlyAttendanceRef = firestore
-          .collection('user_attendance')
+          .collection('user_attendances')
           .where('rfid', isEqualTo: rfid) // Filter by rfid
           .where('date',
               isGreaterThanOrEqualTo: DateFormat('MM_dd_yyyy').format(
@@ -248,7 +248,7 @@ Future<void> fetchYearlyAttendanceData() async {
 
       // Query attendance records for the user across the entire year by date range
       final yearlyAttendanceRef = firestore
-          .collection('user_attendance')
+          .collection('user_attendances')
           .where('rfid', isEqualTo: rfid) // Filter by rfid
           .where('date',
               isGreaterThanOrEqualTo: DateFormat('MM_dd_yyyy')

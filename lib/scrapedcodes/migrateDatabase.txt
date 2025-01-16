@@ -1,0 +1,28 @@
+
+Future<void> moveAttendanceData() async {
+  FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+  // References to the collections
+  CollectionReference oldCollection = firestore.collection('user_attendance');
+  CollectionReference newCollection = firestore.collection('user_attendances');
+
+  try {
+    // Fetch all documents from the old collection
+    QuerySnapshot snapshot = await oldCollection.get();
+
+    // Iterate through each document
+    for (QueryDocumentSnapshot doc in snapshot.docs) {
+      Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+
+      // Add the document to the new collection
+      await newCollection.doc(doc.id).set(data);
+
+      // Optionally delete the document from the old collection
+      await oldCollection.doc(doc.id).delete();
+    }
+
+    print('Data migration completed successfully.');
+  } catch (e) {
+    print('Error during data migration: $e');
+  }
+}

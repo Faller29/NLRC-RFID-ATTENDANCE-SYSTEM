@@ -550,7 +550,7 @@ class _ScannedModalState extends State<ScannedModal> {
 
       // Reference to the attendance document for the user today
       final attendanceRef = firestore
-          .collection('user_attendance')
+          .collection('user_attendances')
           .where('rfid', isEqualTo: rfid) // Query by RFID
           .where('date', isEqualTo: todayDate) // Search by date field
           .limit(
@@ -562,7 +562,7 @@ class _ScannedModalState extends State<ScannedModal> {
         // First scan, save as Time In
         final newAttendanceRef = firestore
             .collection(
-                'user_attendance') // Use the 'user_attendance' collection
+                'user_attendances') // Use the 'user_attendances' collection
             .doc();
 
         await newAttendanceRef.set({

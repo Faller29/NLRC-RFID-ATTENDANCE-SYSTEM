@@ -765,9 +765,9 @@ class _ManageUserPageState extends State<ManageUserPage> {
         'imagePath': imagePath,
       });
 
-      // Update all attendance records for this user in user_attendance collection
+      // Update all attendance records for this user in user_attendances collection
       final userAttendanceSnapshot = await _firestore
-          .collection('user_attendance')
+          .collection('user_attendances')
           .where('rfid', isEqualTo: _userIdToEdit)
           .get();
 
@@ -863,13 +863,13 @@ class _ManageUserPageState extends State<ManageUserPage> {
 
                   // Delete attendance records for the user's RFID
                   final attendanceQuerySnapshot = await _firestore
-                      .collection('user_attendance')
+                      .collection('user_attendances')
                       .where('rfid', isEqualTo: rfid)
                       .get();
 
                   for (final doc in attendanceQuerySnapshot.docs) {
                     await _firestore
-                        .collection('user_attendance')
+                        .collection('user_attendances')
                         .doc(doc.id)
                         .delete();
                   }

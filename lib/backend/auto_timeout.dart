@@ -8,8 +8,8 @@ Future<void> updateNullTimeOut() async {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
-    //user_attendance collection for records with null timeOut
-    final attendanceRef = firestore.collection('user_attendance');
+    //user_attendances collection for records with null timeOut
+    final attendanceRef = firestore.collection('user_attendances');
     final querySnapshot =
         await attendanceRef.where('timeOut', isNull: true).get();
 
