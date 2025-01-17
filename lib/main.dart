@@ -5,6 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:nlrc_rfid_scanner/backend/data/file_reader.dart';
 import 'package:window_manager/window_manager.dart';
 import 'firebase_options.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:nlrc_rfid_scanner/backend/auto_timeout.dart';
 import 'package:nlrc_rfid_scanner/backend/data/announcement_backend.dart';
@@ -168,6 +169,7 @@ Future<void> checkConnectivity() async {
       .timeout(const Duration(seconds: 5), onTimeout: () {
     throw TimeoutException("Internet check timed out");
   });
+
   if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
     await updateNullTimeOut();
     await deleteExpiredAnnouncements();

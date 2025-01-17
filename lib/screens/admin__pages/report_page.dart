@@ -8,7 +8,6 @@ import 'package:printing/printing.dart'; // For printing PDFs
 import 'package:flutter/services.dart'; // For loading images
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:nlrc_rfid_scanner/assets/themeData.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 
 class ReportPage extends StatefulWidget {
