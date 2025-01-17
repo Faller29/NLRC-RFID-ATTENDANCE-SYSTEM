@@ -1,5 +1,5 @@
 # nlrc_rfid_scanner
-
+path: C:\Users\Allen\Desktop\NLRC\nlrc_rfid_scanner>
 A new Flutter project.
 use 3.19.5
 
