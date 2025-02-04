@@ -678,7 +678,8 @@ class _ReportPage extends State<ReportPage> {
           FirebaseFirestore.instance.collection('user_attendances');
 
       // Fetch all documents in the `user_attendances` collection
-      QuerySnapshot userSnapshots = await userAttendanceCollection.get();
+      QuerySnapshot userSnapshots =
+          await userAttendanceCollection.orderBy('name').get();
 
       // Initialize the attendance data list
       List<Map<String, String>> attendanceData = [];
@@ -941,11 +942,51 @@ class _ReportPage extends State<ReportPage> {
         pw.MultiPage(
           pageFormat: PdfPageFormat.a4,
           margin: pw.EdgeInsets.only(top: 20, bottom: 20, left: 40, right: 40),
+          header: (context) => pw.Column(
+            children: [
+              pw.Row(
+                crossAxisAlignment: pw.CrossAxisAlignment.center,
+                mainAxisAlignment: pw.MainAxisAlignment.center,
+                children: [
+                  pw.SizedBox(width: 30),
+                  pw.Image(logo, width: 65, height: 65),
+                  pw.SizedBox(width: 30),
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.center,
+                    children: [
+                      pw.Text('Republic of the Philippines',
+                          style: pw.TextStyle(fontSize: 12)),
+                      pw.Text('Department of Labor and Employment',
+                          style: pw.TextStyle(fontSize: 12)),
+                      pw.Text('NATIONAL LABOR RELATIONS COMMISSION',
+                          style: pw.TextStyle(
+                              fontSize: 12, fontWeight: pw.FontWeight.bold)),
+                      pw.Text('REGIONAL ARBITRATION BRANCH No. IV',
+                          style: pw.TextStyle(
+                              fontSize: 12, fontWeight: pw.FontWeight.bold)),
+                      pw.Text('3rd & 4th Floor, Hectan Penthouse, Chipeco Ave.',
+                          style: pw.TextStyle(fontSize: 12)),
+                      pw.Text('Brgy. Halang, Calamba City, Laguna',
+                          style: pw.TextStyle(fontSize: 12)),
+                      pw.Text('Attendance Report',
+                          style: pw.TextStyle(
+                              fontSize: 12,
+                              fontWeight: pw.FontWeight.bold,
+                              color: PdfColors.black)),
+                    ],
+                  ),
+                  pw.SizedBox(width: 5),
+                  pw.Image(logo1, width: 65, height: 65),
+                  pw.SizedBox(width: 5),
+                  pw.Image(logo2, width: 65, height: 45),
+                ],
+              ),
+              pw.Divider(),
+              pw.SizedBox(height: 5),
+            ],
+          ),
           build: (context) {
-            final totalPages = (attendanceData.length / rowsPerPage)
-                .ceil(); // Calculate total pages
-
-            // Split data into chunks
+            final totalPages = (attendanceData.length / rowsPerPage).ceil();
             final chunks = List.generate(
               totalPages,
               (i) => attendanceData
@@ -954,57 +995,9 @@ class _ReportPage extends State<ReportPage> {
                   .toList(),
             );
 
-            // Generate pages for each chunk
             return chunks.map((chunk) {
               return pw.Column(
                 children: [
-                  pw.Header(
-                    child: pw.Column(
-                      children: [
-                        pw.Row(
-                          crossAxisAlignment: pw.CrossAxisAlignment.center,
-                          mainAxisAlignment: pw.MainAxisAlignment.center,
-                          children: [
-                            pw.SizedBox(width: 30),
-                            pw.Image(logo, width: 65, height: 65),
-                            pw.SizedBox(width: 30),
-                            pw.Column(
-                              crossAxisAlignment: pw.CrossAxisAlignment.center,
-                              children: [
-                                pw.Text('Republic of the Philippines',
-                                    style: pw.TextStyle(fontSize: 12)),
-                                pw.Text('Department of Labor and Employment',
-                                    style: pw.TextStyle(fontSize: 12)),
-                                pw.Text('NATIONAL LABOR RELATIONS COMMISSION',
-                                    style: pw.TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: pw.FontWeight.bold)),
-                                pw.Text('REGIONAL ARBITRATION BRANCH No. IV',
-                                    style: pw.TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: pw.FontWeight.bold)),
-                                pw.Text(
-                                    '3rd & 4th Floor, Hectan Penthouse, Chipeco Ave.,',
-                                    style: pw.TextStyle(fontSize: 12)),
-                                pw.Text('Brgy. Halang, Calamba City, Laguna',
-                                    style: pw.TextStyle(fontSize: 12)),
-                                pw.Text('Attendance Report',
-                                    style: pw.TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: pw.FontWeight.bold,
-                                        color: PdfColors.black)),
-                              ],
-                            ),
-                            pw.SizedBox(width: 5),
-                            pw.Image(logo1, width: 65, height: 65),
-                            pw.SizedBox(width: 5),
-                            pw.Image(logo2, width: 65, height: 45),
-                          ],
-                        ),
-                        pw.SizedBox(height: 5),
-                      ],
-                    ),
-                  ),
                   pw.Text('$employeeName',
                       style: pw.TextStyle(
                           fontSize: 13,
@@ -1025,19 +1018,6 @@ class _ReportPage extends State<ReportPage> {
                           employee['totalHours'] ?? '',
                         ];
                       }).toList(),
-                      // Add a row for overall total hours
-                      [
-                        '',
-                        '',
-                        '',
-                        pw.Text(
-                          'Overall Total: $overallHours $hourText $overallMinutes $minuteText',
-                          style: pw.TextStyle(
-                            fontWeight: pw.FontWeight.bold,
-                            fontSize: 10,
-                          ),
-                        ),
-                      ],
                     ],
                     border:
                         pw.TableBorder.all(color: PdfColors.black, width: 1),
@@ -1233,15 +1213,63 @@ class _ReportPage extends State<ReportPage> {
       const int rowsPerPage =
           23; // Adjust based on your layout and desired number of rows per page
 
+      attendanceData
+          .sort((a, b) => (a['name'] ?? '').compareTo(b['name'] ?? ''));
+
       pdf.addPage(
         pw.MultiPage(
           pageFormat: PdfPageFormat.a4,
           margin: pw.EdgeInsets.only(top: 20, bottom: 20, left: 40, right: 40),
+          header: (context) => pw.Column(
+            children: [
+              pw.Row(
+                crossAxisAlignment: pw.CrossAxisAlignment.center,
+                mainAxisAlignment: pw.MainAxisAlignment.center,
+                children: [
+                  pw.SizedBox(width: 30),
+                  pw.Image(logo, width: 65, height: 65),
+                  pw.SizedBox(width: 30),
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.center,
+                    children: [
+                      pw.Text('Republic of the Philippines',
+                          style: pw.TextStyle(fontSize: 12)),
+                      pw.Text('Department of Labor and Employment',
+                          style: pw.TextStyle(fontSize: 12)),
+                      pw.Text('NATIONAL LABOR RELATIONS COMMISSION',
+                          style: pw.TextStyle(
+                              fontSize: 12, fontWeight: pw.FontWeight.bold)),
+                      pw.Text('REGIONAL ARBITRATION BRANCH No. IV',
+                          style: pw.TextStyle(
+                              fontSize: 12, fontWeight: pw.FontWeight.bold)),
+                      pw.Text(
+                          '3rd & 4th Floor, Hectan Penthouse, Chipeco Ave.,',
+                          style: pw.TextStyle(fontSize: 12)),
+                      pw.Text('Brgy. Halang, Calamba City, Laguna',
+                          style: pw.TextStyle(fontSize: 12)),
+                      pw.Text('Attendance Report',
+                          style: pw.TextStyle(
+                              fontSize: 12,
+                              fontWeight: pw.FontWeight.bold,
+                              color: PdfColors.black)),
+                    ],
+                  ),
+                  pw.SizedBox(width: 5),
+                  pw.Image(logo1, width: 65, height: 65),
+                  pw.SizedBox(width: 5),
+                  pw.Image(logo2, width: 65, height: 45),
+                ],
+              ),
+              pw.SizedBox(height: 5),
+              pw.Text(DateFormat('MMM dd, yyyy').format(selectedDate1!),
+                  style:
+                      const pw.TextStyle(fontSize: 11, color: PdfColors.black)),
+              pw.SizedBox(height: 10),
+            ],
+          ),
           build: (context) {
-            final totalPages = (attendanceData.length / rowsPerPage)
-                .ceil(); // Calculate total pages
+            final totalPages = (attendanceData.length / rowsPerPage).ceil();
 
-            // Split data into chunks
             final chunks = List.generate(
               totalPages,
               (i) => attendanceData
@@ -1250,86 +1278,27 @@ class _ReportPage extends State<ReportPage> {
                   .toList(),
             );
 
-            // Generate pages for each chunk
             return chunks.map((chunk) {
-              return pw.Column(
-                children: [
-                  pw.Header(
-                    child: pw.Column(
-                      children: [
-                        pw.Row(
-                          crossAxisAlignment: pw.CrossAxisAlignment.center,
-                          mainAxisAlignment: pw.MainAxisAlignment.center,
-                          children: [
-                            pw.SizedBox(width: 30),
-                            pw.Image(logo, width: 65, height: 65),
-                            pw.SizedBox(width: 30),
-                            pw.Column(
-                              crossAxisAlignment: pw.CrossAxisAlignment.center,
-                              children: [
-                                pw.Text('Republic of the Philippines',
-                                    style: pw.TextStyle(fontSize: 12)),
-                                pw.Text('Department of Labor and Employment',
-                                    style: pw.TextStyle(fontSize: 12)),
-                                pw.Text('NATIONAL LABOR RELATIONS COMMISSION',
-                                    style: pw.TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: pw.FontWeight.bold)),
-                                pw.Text('REGIONAL ARBITRATION BRANCH No. IV',
-                                    style: pw.TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: pw.FontWeight.bold)),
-                                pw.Text(
-                                    '3rd & 4th Floor, Hectan Penthouse, Chipeco Ave.,',
-                                    style: pw.TextStyle(fontSize: 12)),
-                                pw.Text('Brgy. Halang, Calamba City, Laguna',
-                                    style: pw.TextStyle(fontSize: 12)),
-                                pw.Text('Attendance Report',
-                                    style: pw.TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: pw.FontWeight.bold,
-                                        color: PdfColors.black)),
-                              ],
-                            ),
-                            pw.SizedBox(width: 5),
-                            pw.Image(logo1, width: 65, height: 65),
-                            pw.SizedBox(width: 5),
-                            pw.Image(logo2, width: 65, height: 45),
-                          ],
-                        ),
-                        pw.SizedBox(height: 5),
-                      ],
-                    ),
-                  ),
-                  pw.Text(DateFormat('MMM dd, yyyy').format(selectedDate1!),
-                      style: const pw.TextStyle(
-                          fontSize: 11, color: PdfColors.black)),
-                  pw.SizedBox(height: 10),
-                  pw.Table.fromTextArray(
-                    headers: ['Name', 'Time In', 'Time Out', 'Total Hours'],
-                    data: [
-                      ...chunk.map((employee) {
-                        return [
-                          employee['name'] ?? '',
-                          employee['timeIn'] ?? '',
-                          employee['timeOut'] ?? '',
-                          employee['totalHours'] ?? '',
-                        ];
-                      }).toList(),
-                    ],
-                    border:
-                        pw.TableBorder.all(color: PdfColors.black, width: 1),
-                    cellAlignment: pw.Alignment.center,
-                    headerStyle: pw.TextStyle(
-                        fontSize: 12,
-                        fontWeight: pw.FontWeight.bold,
-                        color: PdfColors.white),
-                    headerDecoration:
-                        const pw.BoxDecoration(color: PdfColors.black),
-                    cellStyle: const pw.TextStyle(fontSize: 10),
-                    cellPadding: const pw.EdgeInsets.all(8),
-                  ),
-                ],
+              return pw.Table.fromTextArray(
+                headers: ['Name', 'Time In', 'Time Out', 'Total Hours'],
+                data: chunk.map((employee) {
+                  return [
+                    employee['name'] ?? '',
+                    employee['timeIn'] ?? '',
+                    employee['timeOut'] ?? '',
+                    employee['totalHours'] ?? '',
+                  ];
+                }).toList(),
+                border: pw.TableBorder.all(color: PdfColors.black, width: 1),
+                cellAlignment: pw.Alignment.center,
+                headerStyle: pw.TextStyle(
+                    fontSize: 12,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.white),
+                headerDecoration:
+                    const pw.BoxDecoration(color: PdfColors.black),
+                cellStyle: const pw.TextStyle(fontSize: 10),
+                cellPadding: const pw.EdgeInsets.all(8),
               );
             }).toList();
           },
@@ -1515,100 +1484,85 @@ class _ReportPage extends State<ReportPage> {
         pw.MultiPage(
           pageFormat: PdfPageFormat.a4,
           margin: pw.EdgeInsets.only(top: 20, bottom: 20, left: 40, right: 40),
-          build: (context) {
-            final totalPages = (attendanceData.length / rowsPerPage)
-                .ceil(); // Calculate total pages
-
-            // Split data into chunks
-            final chunks = List.generate(
-              totalPages,
-              (i) => attendanceData
-                  .skip(i * rowsPerPage)
-                  .take(rowsPerPage)
-                  .toList(),
-            );
-
-            // Generate pages for each chunk
-            return chunks.map((chunk) {
-              return pw.Column(
-                children: [
-                  pw.Header(
-                    child: pw.Column(
+          header: (context) {
+            return pw.Column(
+              children: [
+                pw.Row(
+                  crossAxisAlignment: pw.CrossAxisAlignment.center,
+                  mainAxisAlignment: pw.MainAxisAlignment.center,
+                  children: [
+                    pw.SizedBox(width: 30),
+                    pw.Image(logo, width: 65, height: 65),
+                    pw.SizedBox(width: 30),
+                    pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.center,
                       children: [
-                        pw.Row(
-                          crossAxisAlignment: pw.CrossAxisAlignment.center,
-                          mainAxisAlignment: pw.MainAxisAlignment.center,
-                          children: [
-                            pw.SizedBox(width: 30),
-                            pw.Image(logo, width: 65, height: 65),
-                            pw.SizedBox(width: 30),
-                            pw.Column(
-                              crossAxisAlignment: pw.CrossAxisAlignment.center,
-                              children: [
-                                pw.Text('Republic of the Philippines',
-                                    style: pw.TextStyle(fontSize: 12)),
-                                pw.Text('Department of Labor and Employment',
-                                    style: pw.TextStyle(fontSize: 12)),
-                                pw.Text('NATIONAL LABOR RELATIONS COMMISSION',
-                                    style: pw.TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: pw.FontWeight.bold)),
-                                pw.Text('REGIONAL ARBITRATION BRANCH No. IV',
-                                    style: pw.TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: pw.FontWeight.bold)),
-                                pw.Text(
-                                    '3rd & 4th Floor, Hectan Penthouse, Chipeco Ave.,',
-                                    style: pw.TextStyle(fontSize: 12)),
-                                pw.Text('Brgy. Halang, Calamba City, Laguna',
-                                    style: pw.TextStyle(fontSize: 12)),
-                                pw.Text('Attendance Report',
-                                    style: pw.TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: pw.FontWeight.bold,
-                                        color: PdfColors.black)),
-                              ],
-                            ),
-                            pw.SizedBox(width: 5),
-                            pw.Image(logo1, width: 65, height: 65),
-                            pw.SizedBox(width: 5),
-                            pw.Image(logo2, width: 65, height: 45),
-                          ],
-                        ),
-                        pw.SizedBox(height: 5),
+                        pw.Text('Republic of the Philippines',
+                            style: pw.TextStyle(fontSize: 12)),
+                        pw.Text('Department of Labor and Employment',
+                            style: pw.TextStyle(fontSize: 12)),
+                        pw.Text('NATIONAL LABOR RELATIONS COMMISSION',
+                            style: pw.TextStyle(
+                                fontSize: 12, fontWeight: pw.FontWeight.bold)),
+                        pw.Text('REGIONAL ARBITRATION BRANCH No. IV',
+                            style: pw.TextStyle(
+                                fontSize: 12, fontWeight: pw.FontWeight.bold)),
+                        pw.Text(
+                            '3rd & 4th Floor, Hectan Penthouse, Chipeco Ave.,',
+                            style: pw.TextStyle(fontSize: 12)),
+                        pw.Text('Brgy. Halang, Calamba City, Laguna',
+                            style: pw.TextStyle(fontSize: 12)),
                       ],
                     ),
-                  ),
-                  pw.Text(
-                      '${DateFormat.yMMMd().format(selectedDateRange!.start)} - ${DateFormat.yMMMd().format(selectedDateRange!.end)}',
-                      style: const pw.TextStyle(
-                          fontSize: 11, color: PdfColors.black)),
-                  pw.SizedBox(height: 10),
-                  pw.Table.fromTextArray(
-                    headers: ['Name', 'Total Hours'],
-                    data: [
-                      ...chunk.map((employee) {
-                        return [
-                          employee['name'] ?? '',
-                          employee['totalHours'] ?? '',
-                        ];
-                      }).toList(),
-                    ],
-                    border:
-                        pw.TableBorder.all(color: PdfColors.black, width: 1),
-                    cellAlignment: pw.Alignment.center,
-                    headerStyle: pw.TextStyle(
+                    pw.SizedBox(width: 5),
+                    pw.Image(logo1, width: 65, height: 65),
+                    pw.SizedBox(width: 5),
+                    pw.Image(logo2, width: 65, height: 45),
+                  ],
+                ),
+                pw.Divider(),
+              ],
+            );
+          },
+          build: (context) {
+            final sortedData = List.from(attendanceData)
+              ..sort((a, b) => (a['name'] ?? '').compareTo(b['name'] ?? ''));
+
+            return [
+              pw.Center(
+                  child: pw.Column(children: [
+                pw.Text('Attendance Report',
+                    style: pw.TextStyle(
                         fontSize: 12,
                         fontWeight: pw.FontWeight.bold,
-                        color: PdfColors.white),
-                    headerDecoration:
-                        const pw.BoxDecoration(color: PdfColors.black),
-                    cellStyle: const pw.TextStyle(fontSize: 10),
-                    cellPadding: const pw.EdgeInsets.all(8),
-                  ),
-                ],
-              );
-            }).toList();
+                        color: PdfColors.black)),
+                pw.SizedBox(width: 5),
+                pw.Text(
+                  '${DateFormat.yMMMd().format(selectedDateRange!.start)} - ${DateFormat.yMMMd().format(selectedDateRange!.end)}',
+                  style: pw.TextStyle(fontSize: 11, color: PdfColors.black),
+                ),
+              ])),
+              pw.SizedBox(height: 10),
+              pw.Table.fromTextArray(
+                headers: ['Name', 'Total Hours'],
+                data: sortedData.map((employee) {
+                  return [
+                    employee['name'] ?? '',
+                    employee['totalHours'] ?? '',
+                  ];
+                }).toList(),
+                border: pw.TableBorder.all(color: PdfColors.black, width: 1),
+                cellAlignment: pw.Alignment.center,
+                headerStyle: pw.TextStyle(
+                    fontSize: 12,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.white),
+                headerDecoration:
+                    const pw.BoxDecoration(color: PdfColors.black),
+                cellStyle: const pw.TextStyle(fontSize: 10),
+                cellPadding: const pw.EdgeInsets.all(8),
+              ),
+            ];
           },
         ),
       );
